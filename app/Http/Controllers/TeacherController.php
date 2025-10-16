@@ -10,10 +10,13 @@ use Illuminate\Support\Facades\Redirect;
 
 class TeacherController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $perPage = $request->get('perPage', 5); // Default 5 data per halaman
+        
         return Inertia::render('Teachers/Index', [
-            'teachers' => Teacher::all(),
+            'teachers' => Teacher::paginate($perPage),
+            'filters' => $request->only(['search', 'jabatanFilter', 'statusFilter']),
         ]);
     }
 

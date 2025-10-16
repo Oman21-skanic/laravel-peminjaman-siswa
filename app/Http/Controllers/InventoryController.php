@@ -10,10 +10,13 @@ use Illuminate\Support\Facades\Redirect;
 
 class InventoryController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $perPage = $request->get('perPage', 5); // Default 5 data per halaman
+        
         return Inertia::render('Inventories/Index', [
-            'inventories' => Inventory::with(['borrowings.student'])->get(),
+            'inventories' => Inventory::with(['borrowings.student'])->paginate($perPage),
+            'filters' => $request->only(['search', 'kategoriFilter', 'statusFilter']),
         ]);
     }
 

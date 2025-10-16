@@ -2,14 +2,15 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useState, useMemo } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
-export default function Index({ auth, students, flash }) {
+export default function Index({ auth, students, filters = {} }) {
     const { url } = usePage();
-    const [search, setSearch] = useState('');
-    const [classFilter, setClassFilter] = useState('');
-    const [statusFilter, setStatusFilter] = useState('');
+    const [search, setSearch] = useState(filters.search || '');
+    const [classFilter, setClassFilter] = useState(filters.classFilter || '');
+    const [statusFilter, setStatusFilter] = useState(filters.statusFilter || '');
 
+    // Filter data secara client-side untuk data yang sudah di-paginate
     const filteredStudents = useMemo(() => {
-        return students.filter(student => {
+        return students.data.filter(student => {
             const matchesSearch = search === '' || 
                 student.nama_lengkap.toLowerCase().includes(search.toLowerCase()) ||
                 student.nisn.includes(search) ||
@@ -22,7 +23,7 @@ export default function Index({ auth, students, flash }) {
             
             return matchesSearch && matchesClass && matchesStatus;
         });
-    }, [students, search, classFilter, statusFilter]);
+    }, [students.data, search, classFilter, statusFilter]);
 
     const handleDelete = (id) => {
         if (confirm('Apakah Anda yakin ingin menghapus siswa ini?')) {
@@ -30,7 +31,28 @@ export default function Index({ auth, students, flash }) {
         }
     };
 
-    const uniqueClasses = [...new Set(students.map(student => student.kelas))].sort();
+    const handleFilter = () => {
+        router.get(route('students.index'), {
+            search,
+            classFilter,
+            statusFilter,
+        }, {
+            preserveState: true,
+            replace: true,
+        });
+    };
+
+    const clearFilters = () => {
+        setSearch('');
+        setClassFilter('');
+        setStatusFilter('');
+        router.get(route('students.index'), {}, {
+            preserveState: true,
+            replace: true,
+        });
+    };
+
+    const uniqueClasses = [...new Set(students.data.map(student => student.kelas))].sort();
 
     return (
         <AuthenticatedLayout
@@ -41,9 +63,9 @@ export default function Index({ auth, students, flash }) {
 
             <div className="max-w-7xl mx-auto">
                 {/* Flash Message */}
-                {flash?.success && (
+                {usePage().props.flash?.success && (
                     <div className="mb-4 sm:mb-6 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
-                        {flash.success}
+                        {usePage().props.flash.success}
                     </div>
                 )}
 
@@ -70,8 +92,8 @@ export default function Index({ auth, students, flash }) {
                         </h2>
                         <div className="h-48 sm:h-64 flex items-end gap-2 sm:gap-4 overflow-x-auto">
                             {uniqueClasses.map(kelas => {
-                                const count = students.filter(s => s.kelas === kelas).length;
-                                const maxCount = Math.max(...uniqueClasses.map(k => students.filter(s => s.kelas === k).length));
+                                const count = students.data.filter(s => s.kelas === kelas).length;
+                                const maxCount = Math.max(...uniqueClasses.map(k => students.data.filter(s => s.kelas === k).length));
                                 const height = maxCount > 0 ? (count / maxCount) * 80 + 20 : 20;
                                 
                                 return (
@@ -101,7 +123,7 @@ export default function Index({ auth, students, flash }) {
                                         d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
                                         fill="none" 
                                         stroke="currentColor" 
-                                        strokeDasharray={`${(students.filter(s => s.is_active).length / students.length) * 100}, 100`}
+                                        strokeDasharray={`${(students.data.filter(s => s.is_active).length / students.data.length) * 100}, 100`}
                                         strokeWidth="3.8"
                                     ></path>
                                     <path 
@@ -109,13 +131,13 @@ export default function Index({ auth, students, flash }) {
                                         d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
                                         fill="none" 
                                         stroke="currentColor" 
-                                        strokeDasharray={`${(students.filter(s => !s.is_active).length / students.length) * 100}, 100`}
-                                        strokeDashoffset={`-${(students.filter(s => s.is_active).length / students.length) * 100}`}
+                                        strokeDasharray={`${(students.data.filter(s => !s.is_active).length / students.data.length) * 100}, 100`}
+                                        strokeDashoffset={`-${(students.data.filter(s => s.is_active).length / students.data.length) * 100}`}
                                         strokeWidth="3.8"
                                     ></path>
                                 </svg>
                                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                    <span className="text-xl sm:text-3xl font-bold text-gray-900">{students.length}</span>
+                                    <span className="text-xl sm:text-3xl font-bold text-gray-900">{students.data.length}</span>
                                     <span className="text-xs sm:text-sm text-gray-600">Total Siswa</span>
                                 </div>
                             </div>
@@ -125,7 +147,7 @@ export default function Index({ auth, students, flash }) {
                                     <div>
                                         <p className="font-medium text-gray-800 text-sm sm:text-base">Aktif</p>
                                         <p className="text-gray-600 text-xs sm:text-sm">
-                                            {students.filter(s => s.is_active).length} Siswa
+                                            {students.data.filter(s => s.is_active).length} Siswa
                                         </p>
                                     </div>
                                 </div>
@@ -134,7 +156,7 @@ export default function Index({ auth, students, flash }) {
                                     <div>
                                         <p className="font-medium text-gray-800 text-sm sm:text-base">Tidak Aktif</p>
                                         <p className="text-gray-600 text-xs sm:text-sm">
-                                            {students.filter(s => !s.is_active).length} Siswa
+                                            {students.data.filter(s => !s.is_active).length} Siswa
                                         </p>
                                     </div>
                                 </div>
@@ -155,6 +177,7 @@ export default function Index({ auth, students, flash }) {
                                     placeholder="Cari siswa..."
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && handleFilter()}
                                     className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
                                 />
                                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">search</span>
@@ -187,6 +210,22 @@ export default function Index({ auth, students, flash }) {
                                     <option value="Tidak Aktif">Tidak Aktif</option>
                                 </select>
                                 <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-lg">expand_more</span>
+                            </div>
+
+                            {/* Filter Buttons */}
+                            <div className="flex gap-2 w-full sm:w-auto">
+                                <button 
+                                    onClick={handleFilter}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
+                                >
+                                    Terapkan
+                                </button>
+                                <button 
+                                    onClick={clearFilters}
+                                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors text-sm sm:text-base"
+                                >
+                                    Reset
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -347,6 +386,56 @@ export default function Index({ auth, students, flash }) {
                             <div className="text-center py-8">
                                 <span className="material-symbols-outlined text-gray-400 text-4xl sm:text-6xl mb-4">search_off</span>
                                 <p className="text-gray-600 text-sm sm:text-base">Tidak ada siswa yang ditemukan</p>
+                            </div>
+                        )}
+
+                        {/* Pagination */}
+                        {students.data.length > 0 && (
+                            <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                                <div className="text-sm text-gray-700">
+                                    Menampilkan {students.from} sampai {students.to} dari {students.total} siswa
+                                </div>
+                                <div className="flex gap-1">
+                                    {/* Previous Button */}
+                                    <button
+                                        onClick={() => router.get(students.prev_page_url)}
+                                        disabled={!students.prev_page_url}
+                                        className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                                            !students.prev_page_url
+                                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        Previous
+                                    </button>
+
+                                    {/* Page Numbers */}
+                                    {students.links.slice(1, -1).map((link, index) => (
+                                        <button
+                                            key={index}
+                                            onClick={() => router.get(link.url)}
+                                            className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                                                link.active
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                            }`}
+                                            dangerouslySetInnerHTML={{ __html: link.label }}
+                                        />
+                                    ))}
+
+                                    {/* Next Button */}
+                                    <button
+                                        onClick={() => router.get(students.next_page_url)}
+                                        disabled={!students.next_page_url}
+                                        className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                                            !students.next_page_url
+                                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        Next
+                                    </button>
+                                </div>
                             </div>
                         )}
                     </div>

@@ -10,12 +10,15 @@ use Illuminate\Support\Facades\Redirect;
 
 class StudentController extends Controller
 {
-    public function index()
-    {
-        return Inertia::render('Students/Index', [
-            'students' => Student::all(),
-        ]);
-    }
+public function index(Request $request)
+{
+    $perPage = $request->get('perPage', 5); // Default 5 data per halaman
+    
+    return Inertia::render('Students/Index', [
+        'students' => Student::paginate($perPage),
+        'filters' => $request->only(['search', 'classFilter', 'statusFilter']),
+    ]);
+}
 
     public function create()
     {

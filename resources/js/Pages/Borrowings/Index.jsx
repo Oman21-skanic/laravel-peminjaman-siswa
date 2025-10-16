@@ -2,28 +2,50 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useState, useMemo } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
-export default function Index({ auth, borrowings, flash }) {
+export default function Index({ auth, borrowings, filters = {} }) {
     const { url } = usePage();
-    const [search, setSearch] = useState('');
-    const [statusFilter, setStatusFilter] = useState('');
+    const [search, setSearch] = useState(filters.search || '');
+    const [statusFilter, setStatusFilter] = useState(filters.statusFilter || '');
 
+    // Filter data secara client-side untuk data yang sudah di-paginate
     const filteredBorrowings = useMemo(() => {
-        return borrowings.filter(borrowing => {
+        return borrowings.data.filter(borrowing => {
             const matchesSearch = search === '' || 
                 borrowing.student.nama_lengkap.toLowerCase().includes(search.toLowerCase()) ||
                 borrowing.inventory.nama_barang.toLowerCase().includes(search.toLowerCase()) ||
                 borrowing.inventory.kode_barang.includes(search);
             
-            const matchesStatus = statusFilter === '' || borrowing.status === statusFilter;
+            const matchesStatus = statusFilter === '' || 
+                (statusFilter === 'borrowed' && !borrowing.returned_at) ||
+                (statusFilter === 'returned' && borrowing.returned_at);
             
             return matchesSearch && matchesStatus;
         });
-    }, [borrowings, search, statusFilter]);
+    }, [borrowings.data, search, statusFilter]);
 
     const handleDelete = (id) => {
         if (confirm('Apakah Anda yakin ingin menghapus data peminjaman ini?')) {
             router.delete(route('borrowings.destroy', id));
         }
+    };
+
+    const handleFilter = () => {
+        router.get(route('borrowings.index'), {
+            search,
+            statusFilter,
+        }, {
+            preserveState: true,
+            replace: true,
+        });
+    };
+
+    const clearFilters = () => {
+        setSearch('');
+        setStatusFilter('');
+        router.get(route('borrowings.index'), {}, {
+            preserveState: true,
+            replace: true,
+        });
     };
 
     const getStatusBadge = (status, returnedAt) => {
@@ -66,9 +88,9 @@ export default function Index({ auth, borrowings, flash }) {
 
             <div className="max-w-7xl mx-auto">
                 {/* Flash Message */}
-                {flash?.success && (
+                {usePage().props.flash?.success && (
                     <div className="mb-4 sm:mb-6 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
-                        {flash.success}
+                        {usePage().props.flash.success}
                     </div>
                 )}
 
@@ -91,7 +113,7 @@ export default function Index({ auth, borrowings, flash }) {
                     {/* Total Peminjaman */}
                     <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200 shadow-sm text-center">
                         <div className="text-2xl sm:text-3xl font-bold text-blue-600 mb-2">
-                            {borrowings.length}
+                            {borrowings.total}
                         </div>
                         <div className="text-sm sm:text-base text-gray-600">Total Peminjaman</div>
                     </div>
@@ -99,7 +121,7 @@ export default function Index({ auth, borrowings, flash }) {
                     {/* Sedang Dipinjam */}
                     <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200 shadow-sm text-center">
                         <div className="text-2xl sm:text-3xl font-bold text-blue-600 mb-2">
-                            {borrowings.filter(b => !b.returned_at).length}
+                            {borrowings.data.filter(b => !b.returned_at).length}
                         </div>
                         <div className="text-sm sm:text-base text-gray-600">Sedang Dipinjam</div>
                     </div>
@@ -107,7 +129,7 @@ export default function Index({ auth, borrowings, flash }) {
                     {/* Sudah Dikembalikan */}
                     <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200 shadow-sm text-center">
                         <div className="text-2xl sm:text-3xl font-bold text-green-600 mb-2">
-                            {borrowings.filter(b => b.returned_at).length}
+                            {borrowings.data.filter(b => b.returned_at).length}
                         </div>
                         <div className="text-sm sm:text-base text-gray-600">Sudah Dikembalikan</div>
                     </div>
@@ -125,6 +147,7 @@ export default function Index({ auth, borrowings, flash }) {
                                     placeholder="Cari siswa atau barang..."
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && handleFilter()}
                                     className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
                                 />
                                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">search</span>
@@ -142,6 +165,22 @@ export default function Index({ auth, borrowings, flash }) {
                                     <option value="returned">Sudah Dikembalikan</option>
                                 </select>
                                 <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-lg">expand_more</span>
+                            </div>
+
+                            {/* Filter Buttons */}
+                            <div className="flex gap-2 w-full sm:w-auto">
+                                <button 
+                                    onClick={handleFilter}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
+                                >
+                                    Terapkan
+                                </button>
+                                <button 
+                                    onClick={clearFilters}
+                                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors text-sm sm:text-base"
+                                >
+                                    Reset
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -351,6 +390,56 @@ export default function Index({ auth, borrowings, flash }) {
                             <div className="text-center py-8">
                                 <span className="material-symbols-outlined text-gray-400 text-4xl sm:text-6xl mb-4">search_off</span>
                                 <p className="text-gray-600 text-sm sm:text-base">Tidak ada data peminjaman yang ditemukan</p>
+                            </div>
+                        )}
+
+                        {/* Pagination */}
+                        {borrowings.data.length > 0 && (
+                            <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                                <div className="text-sm text-gray-700">
+                                    Menampilkan {borrowings.from} sampai {borrowings.to} dari {borrowings.total} peminjaman
+                                </div>
+                                <div className="flex gap-1">
+                                    {/* Previous Button */}
+                                    <button
+                                        onClick={() => router.get(borrowings.prev_page_url)}
+                                        disabled={!borrowings.prev_page_url}
+                                        className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                                            !borrowings.prev_page_url
+                                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        Previous
+                                    </button>
+
+                                    {/* Page Numbers */}
+                                    {borrowings.links.slice(1, -1).map((link, index) => (
+                                        <button
+                                            key={index}
+                                            onClick={() => router.get(link.url)}
+                                            className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                                                link.active
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                            }`}
+                                            dangerouslySetInnerHTML={{ __html: link.label }}
+                                        />
+                                    ))}
+
+                                    {/* Next Button */}
+                                    <button
+                                        onClick={() => router.get(borrowings.next_page_url)}
+                                        disabled={!borrowings.next_page_url}
+                                        className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                                            !borrowings.next_page_url
+                                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        Next
+                                    </button>
+                                </div>
                             </div>
                         )}
                     </div>

@@ -2,14 +2,15 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useState, useMemo } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
-export default function Index({ auth, inventories, flash }) {
+export default function Index({ auth, inventories, filters = {} }) {
     const { url } = usePage();
-    const [search, setSearch] = useState('');
-    const [kategoriFilter, setKategoriFilter] = useState('');
-    const [statusFilter, setStatusFilter] = useState('');
+    const [search, setSearch] = useState(filters.search || '');
+    const [kategoriFilter, setKategoriFilter] = useState(filters.kategoriFilter || '');
+    const [statusFilter, setStatusFilter] = useState(filters.statusFilter || '');
 
+    // Filter data secara client-side untuk data yang sudah di-paginate
     const filteredInventories = useMemo(() => {
-        return inventories.filter(inventory => {
+        return inventories.data.filter(inventory => {
             const matchesSearch = search === '' || 
                 inventory.nama_barang.toLowerCase().includes(search.toLowerCase()) ||
                 inventory.kode_barang.includes(search) ||
@@ -20,7 +21,7 @@ export default function Index({ auth, inventories, flash }) {
             
             return matchesSearch && matchesKategori && matchesStatus;
         });
-    }, [inventories, search, kategoriFilter, statusFilter]);
+    }, [inventories.data, search, kategoriFilter, statusFilter]);
 
     const handleDelete = (id) => {
         if (confirm('Apakah Anda yakin ingin menghapus barang ini?')) {
@@ -28,8 +29,29 @@ export default function Index({ auth, inventories, flash }) {
         }
     };
 
-    const uniqueKategories = [...new Set(inventories.map(inventory => inventory.kategori))].sort();
-    const uniqueStatuses = [...new Set(inventories.map(inventory => inventory.status))].sort();
+    const handleFilter = () => {
+        router.get(route('inventories.index'), {
+            search,
+            kategoriFilter,
+            statusFilter,
+        }, {
+            preserveState: true,
+            replace: true,
+        });
+    };
+
+    const clearFilters = () => {
+        setSearch('');
+        setKategoriFilter('');
+        setStatusFilter('');
+        router.get(route('inventories.index'), {}, {
+            preserveState: true,
+            replace: true,
+        });
+    };
+
+    const uniqueKategories = [...new Set(inventories.data.map(inventory => inventory.kategori))].sort();
+    const uniqueStatuses = [...new Set(inventories.data.map(inventory => inventory.status))].sort();
 
     const getStatusBadge = (status) => {
         const statusConfig = {
@@ -55,9 +77,9 @@ export default function Index({ auth, inventories, flash }) {
 
             <div className="max-w-7xl mx-auto">
                 {/* Flash Message */}
-                {flash?.success && (
+                {usePage().props.flash?.success && (
                     <div className="mb-4 sm:mb-6 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
-                        {flash.success}
+                        {usePage().props.flash.success}
                     </div>
                 )}
 
@@ -84,8 +106,8 @@ export default function Index({ auth, inventories, flash }) {
                         </h2>
                         <div className="h-48 sm:h-64 flex items-end gap-2 sm:gap-4 overflow-x-auto">
                             {uniqueKategories.map(kategori => {
-                                const count = inventories.filter(i => i.kategori === kategori).length;
-                                const maxCount = Math.max(...uniqueKategories.map(k => inventories.filter(i => i.kategori === k).length));
+                                const count = inventories.data.filter(i => i.kategori === kategori).length;
+                                const maxCount = Math.max(...uniqueKategories.map(k => inventories.data.filter(i => i.kategori === k).length));
                                 const height = maxCount > 0 ? (count / maxCount) * 80 + 20 : 20;
                                 
                                 return (
@@ -115,7 +137,7 @@ export default function Index({ auth, inventories, flash }) {
                                         d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
                                         fill="none" 
                                         stroke="currentColor" 
-                                        strokeDasharray={`${(inventories.filter(i => i.status === 'available').length / inventories.length) * 100}, 100`}
+                                        strokeDasharray={`${(inventories.data.filter(i => i.status === 'available').length / inventories.data.length) * 100}, 100`}
                                         strokeWidth="3.8"
                                     ></path>
                                     <path 
@@ -123,8 +145,8 @@ export default function Index({ auth, inventories, flash }) {
                                         d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
                                         fill="none" 
                                         stroke="currentColor" 
-                                        strokeDasharray={`${(inventories.filter(i => i.status === 'borrowed').length / inventories.length) * 100}, 100`}
-                                        strokeDashoffset={`-${(inventories.filter(i => i.status === 'available').length / inventories.length) * 100}`}
+                                        strokeDasharray={`${(inventories.data.filter(i => i.status === 'borrowed').length / inventories.data.length) * 100}, 100`}
+                                        strokeDashoffset={`-${(inventories.data.filter(i => i.status === 'available').length / inventories.data.length) * 100}`}
                                         strokeWidth="3.8"
                                     ></path>
                                     <path 
@@ -132,13 +154,13 @@ export default function Index({ auth, inventories, flash }) {
                                         d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
                                         fill="none" 
                                         stroke="currentColor" 
-                                        strokeDasharray={`${(inventories.filter(i => i.status === 'maintenance').length / inventories.length) * 100}, 100`}
-                                        strokeDashoffset={`-${((inventories.filter(i => i.status === 'available').length + inventories.filter(i => i.status === 'borrowed').length) / inventories.length) * 100}`}
+                                        strokeDasharray={`${(inventories.data.filter(i => i.status === 'maintenance').length / inventories.data.length) * 100}, 100`}
+                                        strokeDashoffset={`-${((inventories.data.filter(i => i.status === 'available').length + inventories.data.filter(i => i.status === 'borrowed').length) / inventories.data.length) * 100}`}
                                         strokeWidth="3.8"
                                     ></path>
                                 </svg>
                                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                    <span className="text-xl sm:text-3xl font-bold text-gray-900">{inventories.length}</span>
+                                    <span className="text-xl sm:text-3xl font-bold text-gray-900">{inventories.data.length}</span>
                                     <span className="text-xs sm:text-sm text-gray-600">Total Barang</span>
                                 </div>
                             </div>
@@ -148,7 +170,7 @@ export default function Index({ auth, inventories, flash }) {
                                     <div>
                                         <p className="font-medium text-gray-800 text-sm sm:text-base">Tersedia</p>
                                         <p className="text-gray-600 text-xs sm:text-sm">
-                                            {inventories.filter(i => i.status === 'available').length} Barang
+                                            {inventories.data.filter(i => i.status === 'available').length} Barang
                                         </p>
                                     </div>
                                 </div>
@@ -157,7 +179,7 @@ export default function Index({ auth, inventories, flash }) {
                                     <div>
                                         <p className="font-medium text-gray-800 text-sm sm:text-base">Dipinjam</p>
                                         <p className="text-gray-600 text-xs sm:text-sm">
-                                            {inventories.filter(i => i.status === 'borrowed').length} Barang
+                                            {inventories.data.filter(i => i.status === 'borrowed').length} Barang
                                         </p>
                                     </div>
                                 </div>
@@ -166,7 +188,7 @@ export default function Index({ auth, inventories, flash }) {
                                     <div>
                                         <p className="font-medium text-gray-800 text-sm sm:text-base">Perbaikan</p>
                                         <p className="text-gray-600 text-xs sm:text-sm">
-                                            {inventories.filter(i => i.status === 'maintenance').length} Barang
+                                            {inventories.data.filter(i => i.status === 'maintenance').length} Barang
                                         </p>
                                     </div>
                                 </div>
@@ -187,6 +209,7 @@ export default function Index({ auth, inventories, flash }) {
                                     placeholder="Cari barang..."
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && handleFilter()}
                                     className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
                                 />
                                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">search</span>
@@ -222,6 +245,22 @@ export default function Index({ auth, inventories, flash }) {
                                     ))}
                                 </select>
                                 <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-lg">expand_more</span>
+                            </div>
+
+                            {/* Filter Buttons */}
+                            <div className="flex gap-2 w-full sm:w-auto">
+                                <button 
+                                    onClick={handleFilter}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
+                                >
+                                    Terapkan
+                                </button>
+                                <button 
+                                    onClick={clearFilters}
+                                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors text-sm sm:text-base"
+                                >
+                                    Reset
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -399,6 +438,56 @@ export default function Index({ auth, inventories, flash }) {
                             <div className="text-center py-8">
                                 <span className="material-symbols-outlined text-gray-400 text-4xl sm:text-6xl mb-4">search_off</span>
                                 <p className="text-gray-600 text-sm sm:text-base">Tidak ada barang yang ditemukan</p>
+                            </div>
+                        )}
+
+                        {/* Pagination */}
+                        {inventories.data.length > 0 && (
+                            <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                                <div className="text-sm text-gray-700">
+                                    Menampilkan {inventories.from} sampai {inventories.to} dari {inventories.total} barang
+                                </div>
+                                <div className="flex gap-1">
+                                    {/* Previous Button */}
+                                    <button
+                                        onClick={() => router.get(inventories.prev_page_url)}
+                                        disabled={!inventories.prev_page_url}
+                                        className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                                            !inventories.prev_page_url
+                                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        Previous
+                                    </button>
+
+                                    {/* Page Numbers */}
+                                    {inventories.links.slice(1, -1).map((link, index) => (
+                                        <button
+                                            key={index}
+                                            onClick={() => router.get(link.url)}
+                                            className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                                                link.active
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                            }`}
+                                            dangerouslySetInnerHTML={{ __html: link.label }}
+                                        />
+                                    ))}
+
+                                    {/* Next Button */}
+                                    <button
+                                        onClick={() => router.get(inventories.next_page_url)}
+                                        disabled={!inventories.next_page_url}
+                                        className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                                            !inventories.next_page_url
+                                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        Next
+                                    </button>
+                                </div>
                             </div>
                         )}
                     </div>

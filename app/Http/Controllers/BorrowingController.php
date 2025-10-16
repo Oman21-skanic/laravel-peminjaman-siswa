@@ -11,10 +11,13 @@ use Illuminate\Support\Facades\Redirect;
 
 class BorrowingController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $perPage = $request->get('perPage', 5); // Default 5 data per halaman
+        
         return Inertia::render('Borrowings/Index', [
-            'borrowings' => Borrowing::with(['student', 'inventory'])->get(),
+            'borrowings' => Borrowing::with(['student', 'inventory'])->paginate($perPage),
+            'filters' => $request->only(['search', 'statusFilter']),
         ]);
     }
 
