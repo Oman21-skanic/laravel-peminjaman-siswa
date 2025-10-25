@@ -20,6 +20,11 @@ class Inventory extends Model
         'foto_barang',
     ];
 
+    public function category()
+    {
+        return $this->belongsTo(Category::class, 'kategori');
+    }
+
     public function borrowings()
     {
         return $this->hasMany(Borrowing::class);

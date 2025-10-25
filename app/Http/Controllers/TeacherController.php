@@ -12,11 +12,33 @@ class TeacherController extends Controller
 {
     public function index(Request $request)
     {
-        $perPage = $request->get('perPage', 5); // Default 5 data per halaman
+         $filters = $request->only(['search', 'jabatanFilter', 'statusFilter']);
+        $perPage = $request->get('perPage', 10); // Default 10 data per halaman
         
+        $query = Teacher::query();
+
+        // Apply filters
+        if (!empty($filters['search'])) {
+            $query->where(function ($q) use ($filters) {
+                $q->where('nama_lengkap', 'like', '%' . $filters['search'] . '%')
+                  ->orWhere('nip', 'like', '%' . $filters['search'] . '%')
+                  ->orWhere('email', 'like', '%' . $filters['search'] . '%');
+            });
+        }
+
+        if (!empty($filters['jabatanFilter'])) {
+            $query->where('jabatan', $filters['jabatanFilter']);
+        }
+
+        if (!empty($filters['statusFilter'])) {
+            $isActive = $filters['statusFilter'] === 'Aktif';
+            $query->where('is_active', $isActive);
+        }
+
         return Inertia::render('Teachers/Index', [
-            'teachers' => Teacher::paginate($perPage),
-            'filters' => $request->only(['search', 'jabatanFilter', 'statusFilter']),
+            'teachers' => $query->paginate($perPage)->withQueryString(),
+            'filters' => $filters,
+            'perPage' => (int)$perPage,
         ]);
     }
 

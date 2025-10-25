@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\BorrowingController;
+use App\Http\Controllers\CategoryControlller;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StudentController;
@@ -19,6 +20,8 @@ Route::get('/', function () {
     ]);
 });
 
+
+
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
@@ -32,6 +35,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('teachers', TeacherController::class);
     Route::resource('inventories', InventoryController::class);
     Route::resource('borrowings', BorrowingController::class);
+    Route::resource('category', CategoryControlller::class);
 });
 
 require __DIR__.'/auth.php';

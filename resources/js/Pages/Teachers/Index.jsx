@@ -2,11 +2,12 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useState, useMemo } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
-export default function Index({ auth, teachers, filters = {} }) {
+export default function Index({ auth, teachers, filters = {}, perPage = 10 }) {
     const { url } = usePage();
     const [search, setSearch] = useState(filters.search || '');
     const [jabatanFilter, setJabatanFilter] = useState(filters.jabatanFilter || '');
     const [statusFilter, setStatusFilter] = useState(filters.statusFilter || '');
+    const [selectedPerPage, setSelectedPerPage] = useState(perPage);
 
     // Filter data secara client-side untuk data yang sudah di-paginate
     const filteredTeachers = useMemo(() => {
@@ -36,6 +37,7 @@ export default function Index({ auth, teachers, filters = {} }) {
             search,
             jabatanFilter,
             statusFilter,
+            perPage: selectedPerPage,
         }, {
             preserveState: true,
             replace: true,
@@ -46,13 +48,32 @@ export default function Index({ auth, teachers, filters = {} }) {
         setSearch('');
         setJabatanFilter('');
         setStatusFilter('');
-        router.get(route('teachers.index'), {}, {
+        setSelectedPerPage(10);
+        router.get(route('teachers.index'), {
+            perPage: 10,
+        }, {
+            preserveState: true,
+            replace: true,
+        });
+    };
+
+    const handlePerPageChange = (value) => {
+        setSelectedPerPage(value);
+        router.get(route('teachers.index'), {
+            search,
+            jabatanFilter,
+            statusFilter,
+            perPage: value,
+        }, {
             preserveState: true,
             replace: true,
         });
     };
 
     const uniqueJabatans = [...new Set(teachers.data.map(teacher => teacher.jabatan))].sort();
+
+    // Options untuk data per page
+    const perPageOptions = [5, 10, 15, 20, 25];
 
     return (
         <AuthenticatedLayout
@@ -228,6 +249,26 @@ export default function Index({ auth, teachers, filters = {} }) {
                                 </button>
                             </div>
                         </div>
+
+                        {/* Data per Page Selector */}
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <label htmlFor="perPage" className="text-sm text-gray-600 whitespace-nowrap">
+                                Data per Halaman:
+                            </label>
+                            <div className="relative">
+                                <select 
+                                    id="perPage"
+                                    value={selectedPerPage}
+                                    onChange={(e) => handlePerPageChange(Number(e.target.value))}
+                                    className="pl-3 pr-8 py-2 border border-gray-300 rounded-lg appearance-none bg-white focus:ring-blue-500 focus:border-blue-500 w-20 text-sm"
+                                >
+                                    {perPageOptions.map(option => (
+                                        <option key={option} value={option}>{option}</option>
+                                    ))}
+                                </select>
+                                <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-sm">expand_more</span>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Table */}
@@ -394,6 +435,7 @@ export default function Index({ auth, teachers, filters = {} }) {
                             <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
                                 <div className="text-sm text-gray-700">
                                     Menampilkan {teachers.from} sampai {teachers.to} dari {teachers.total} guru
+                                    {selectedPerPage !== 10 && ` (${selectedPerPage} per halaman)`}
                                 </div>
                                 <div className="flex gap-1">
                                     {/* Previous Button */}

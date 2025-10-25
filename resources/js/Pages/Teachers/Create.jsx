@@ -175,6 +175,8 @@ const handleSubmit = (e) => {
                                     <option value="Guru BK">Guru BK</option>
                                     <option value="Guru Olahraga">Guru Olahraga</option>
                                     <option value="Guru Seni Budaya">Guru Seni Budaya</option>
+                                    <option value="Guru Kesehatan">Guru Kesehatan</option>
+                                    <option value="Guru Kesejahteraan Sosial">Guru Kesejahteraan Sosial</option>
                                 </select>
                                 {allErrors.jabatan && (
                                     <p className="text-red-500 text-xs mt-1">{allErrors.jabatan}</p>
