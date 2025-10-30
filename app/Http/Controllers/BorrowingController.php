@@ -11,13 +11,38 @@ use Illuminate\Support\Facades\Redirect;
 
 class BorrowingController extends Controller
 {
-    public function index(Request $request)
+     public function index(Request $request)
     {
-        $perPage = $request->get('perPage', 5); // Default 5 data per halaman
-        
+        $filters = $request->only(['search', 'statusFilter']);
+        $perPage = $request->get('perPage', 10);
+
+        $query = Borrowing::with(['student', 'inventory']);
+
+        // Apply filters
+        if (!empty($filters['search'])) {
+            $query->where(function ($q) use ($filters) {
+                $q->whereHas('student', function ($studentQuery) use ($filters) {
+                    $studentQuery->where('nama_lengkap', 'like', '%' . $filters['search'] . '%');
+                })
+                ->orWhereHas('inventory', function ($inventoryQuery) use ($filters) {
+                    $inventoryQuery->where('nama_barang', 'like', '%' . $filters['search'] . '%')
+                                  ->orWhere('kode_barang', 'like', '%' . $filters['search'] . '%');
+                });
+            });
+        }
+
+        if (!empty($filters['statusFilter'])) {
+            if ($filters['statusFilter'] === 'borrowed') {
+                $query->whereNull('returned_at');
+            } elseif ($filters['statusFilter'] === 'returned') {
+                $query->whereNotNull('returned_at');
+            }
+        }
+
         return Inertia::render('Borrowings/Index', [
-            'borrowings' => Borrowing::with(['student', 'inventory'])->paginate($perPage),
-            'filters' => $request->only(['search', 'statusFilter']),
+            'borrowings' => $query->paginate($perPage)->withQueryString(),
+            'filters' => $filters,
+            'perPage' => (int)$perPage,
         ]);
     }
 
@@ -92,7 +117,7 @@ class BorrowingController extends Controller
             // Return old inventory
             $oldInventory = Inventory::find($borrowing->inventory_id);
             $oldInventory->update(['status' => 'available']);
-            
+
             // Borrow new inventory
             $newInventory = Inventory::find($validated['inventory_id']);
             $newInventory->update(['status' => 'borrowed']);
@@ -109,7 +134,7 @@ class BorrowingController extends Controller
         if (!$borrowing->returned_at) {
             $borrowing->inventory->update(['status' => 'available']);
         }
-        
+
         $borrowing->delete();
 
         return Redirect::route('borrowings.index')->with('success', 'Peminjaman berhasil dihapus.');

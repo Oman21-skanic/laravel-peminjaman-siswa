@@ -10,15 +10,37 @@ use Illuminate\Support\Facades\Redirect;
 
 class StudentController extends Controller
 {
-public function index(Request $request)
-{
-    $perPage = $request->get('perPage', 5); // Default 5 data per halaman
-    
-    return Inertia::render('Students/Index', [
-        'students' => Student::paginate($perPage),
-        'filters' => $request->only(['search', 'classFilter', 'statusFilter']),
-    ]);
-}
+    public function index(Request $request)
+    {
+        $filters = $request->only(['search', 'classFilter', 'statusFilter']);
+        $perPage = $request->get('perPage', 10);
+
+        $query = Student::query();
+
+        // Apply filters
+        if (!empty($filters['search'])) {
+            $query->where(function ($q) use ($filters) {
+                $q->where('nama_lengkap', 'like', '%' . $filters['search'] . '%')
+                  ->orWhere('nisn', 'like', '%' . $filters['search'] . '%')
+                  ->orWhere('email', 'like', '%' . $filters['search'] . '%');
+            });
+        }
+
+        if (!empty($filters['classFilter'])) {
+            $query->where('kelas', $filters['classFilter']);
+        }
+
+        if (!empty($filters['statusFilter'])) {
+            $isActive = $filters['statusFilter'] === 'Aktif';
+            $query->where('is_active', $isActive);
+        }
+
+        return Inertia::render('Students/Index', [
+            'students' => $query->paginate($perPage)->withQueryString(),
+            'filters' => $filters,
+            'perPage' => (int)$perPage,
+        ]);
+    }
 
     public function create()
     {
@@ -31,16 +53,14 @@ public function index(Request $request)
             'nisn' => 'required|string|max:255|unique:students',
             'nama_lengkap' => 'required|string|max:255',
             'kelas' => 'required|string|max:255',
-            'no_hp' => 'required|string|max:255',
+            'no_hp' => 'required|string|max:20',
             'email' => 'required|email|unique:students',
             'alamat' => 'required|string',
             'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'is_active' => 'required|boolean', // Ubah menjadi boolean
+            'is_active' => 'required|boolean',
         ]);
 
-        // Konversi is_active ke format yang sesuai dengan database
-        $validated['is_active'] = (bool) $validated['is_active'];
-
+        // Handle file upload
         if ($request->hasFile('profile_picture')) {
             $validated['profile_picture'] = $request->file('profile_picture')->store('profile_pictures', 'public');
         }
@@ -67,25 +87,26 @@ public function index(Request $request)
     public function update(Request $request, Student $student)
     {
         $validated = $request->validate([
-            'nisn' => 'required|string|max:255|unique:students,nisn,' . $student->id,
-            'nama_lengkap' => 'required|string|max:255',
-            'kelas' => 'required|string|max:255',
-            'no_hp' => 'required|string|max:255',
-            'email' => 'required|email|unique:students,email,' . $student->id,
-            'alamat' => 'required|string',
+            'nisn' => 'string|max:255|unique:students,nisn,' . $student->id,
+            'nama_lengkap' => 'string|max:255',
+            'kelas' => 'string|max:255',
+            'no_hp' => 'string|max:20',
+            'email' => 'email|unique:students,email,' . $student->id,
+            'alamat' => 'string',
             'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'is_active' => 'required|boolean', // Ubah menjadi boolean
+            'is_active' => 'boolean',
         ]);
 
-        // Konversi is_active ke format yang sesuai dengan database
-        $validated['is_active'] = (bool) $validated['is_active'];
-
+        // Handle file upload
         if ($request->hasFile('profile_picture')) {
-            // Hapus foto lama kalau ada
+            // Delete old profile picture if exists
             if ($student->profile_picture) {
                 Storage::disk('public')->delete($student->profile_picture);
             }
             $validated['profile_picture'] = $request->file('profile_picture')->store('profile_pictures', 'public');
+        } else {
+            // Keep the existing profile picture if no new file is uploaded
+            $validated['profile_picture'] = $student->profile_picture;
         }
 
         $student->update($validated);
@@ -95,10 +116,11 @@ public function index(Request $request)
 
     public function destroy(Student $student)
     {
-        // Hapus foto kalau ada
+        // Delete profile picture if exists
         if ($student->profile_picture) {
             Storage::disk('public')->delete($student->profile_picture);
         }
+
         $student->delete();
 
         return Redirect::route('students.index')->with('success', 'Siswa berhasil dihapus.');

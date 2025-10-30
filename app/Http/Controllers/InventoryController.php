@@ -10,13 +10,34 @@ use Illuminate\Support\Facades\Redirect;
 
 class InventoryController extends Controller
 {
-    public function index(Request $request)
+      public function index(Request $request)
     {
-        $perPage = $request->get('perPage', 5); // Default 5 data per halaman
-        
+        $filters = $request->only(['search', 'kategoriFilter', 'statusFilter']);
+        $perPage = $request->get('perPage', 10); // Default 10 data per halaman
+
+        $query = Inventory::query();
+
+        // Apply filters
+        if (!empty($filters['search'])) {
+            $query->where(function ($q) use ($filters) {
+                $q->where('nama_barang', 'like', '%' . $filters['search'] . '%')
+                  ->orWhere('kode_barang', 'like', '%' . $filters['search'] . '%')
+                  ->orWhere('deskripsi', 'like', '%' . $filters['search'] . '%');
+            });
+        }
+
+        if (!empty($filters['kategoriFilter'])) {
+            $query->where('kategori', $filters['kategoriFilter']);
+        }
+
+        if (!empty($filters['statusFilter'])) {
+            $query->where('status', $filters['statusFilter']);
+        }
+
         return Inertia::render('Inventories/Index', [
-            'inventories' => Inventory::with(['borrowings.student'])->paginate($perPage),
-            'filters' => $request->only(['search', 'kategoriFilter', 'statusFilter']),
+            'inventories' => $query->paginate($perPage)->withQueryString(),
+            'filters' => $filters,
+            'perPage' => (int)$perPage,
         ]);
     }
 

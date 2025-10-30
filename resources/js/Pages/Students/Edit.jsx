@@ -1,8 +1,9 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { useState, useEffect } from 'react';
 
 export default function Edit({ auth, student }) {
-    const { data, setData, put, processing, errors } = useForm({
+    const { data, setData, put, processing, errors, reset } = useForm({
         nisn: student.nisn || '',
         nama_lengkap: student.nama_lengkap || '',
         kelas: student.kelas || '',
@@ -13,33 +14,47 @@ export default function Edit({ auth, student }) {
         profile_picture: null,
     });
 
-   // Di handleSubmit function, tambahkan:
-const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    const formData = new FormData();
-    formData.append('nisn', data.nisn);
-    formData.append('nama_lengkap', data.nama_lengkap);
-    formData.append('kelas', data.kelas);
-    formData.append('no_hp', data.no_hp);
-    formData.append('email', data.email);
-    formData.append('alamat', data.alamat);
-    formData.append('is_active', data.is_active ? 1 : 0); // Konversi ke 1/0
-    formData.append('_method', 'put'); // Untuk method spoofing
-    
-    if (data.profile_picture) {
-        formData.append('profile_picture', data.profile_picture);
-    }
+    // Debug: console log data ketika berubah
+    useEffect(() => {
+        console.log('Current form data:', data);
+    }, [data]);
 
-    post(route('students.update', student.id), {
-        data: formData,
-        forceFormData: true,
-    });
-};
+    const handleSubmit = (e) => {
+        e.preventDefault();
+
+        console.log('Submitting data:', data); // Debug
+
+        put(route('students.update', student.id), {
+            preserveScroll: true,
+            onError: (errors) => {
+                console.log('Validation errors:', errors); // Debug errors
+            },
+            onSuccess: () => {
+                console.log('Update successful'); // Debug success
+            }
+        });
+    };
 
     const handleFileChange = (e) => {
-        setData('profile_picture', e.target.files[0]);
+        const file = e.target.files[0];
+        if (file) {
+            setData('profile_picture', file);
+        }
     };
+
+    // Reset form ketika student berubah
+    useEffect(() => {
+        reset({
+            nisn: student.nisn || '',
+            nama_lengkap: student.nama_lengkap || '',
+            kelas: student.kelas || '',
+            no_hp: student.no_hp || '',
+            email: student.email || '',
+            alamat: student.alamat || '',
+            is_active: student.is_active || false,
+            profile_picture: null,
+        });
+    }, [student]);
 
     return (
         <AuthenticatedLayout
@@ -57,8 +72,8 @@ const handleSubmit = (e) => {
                         </h1>
                         <p className="text-gray-600 mt-2">Ubah informasi siswa</p>
                     </div>
-                    <Link 
-                        href={route('students.show', student.id)} 
+                    <Link
+                        href={route('students.show', student.id)}
                         className="bg-gray-500 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-gray-600 transition-colors"
                     >
                         <span className="material-symbols-outlined text-lg">arrow_back</span>
@@ -68,14 +83,14 @@ const handleSubmit = (e) => {
 
                 {/* Edit Form */}
                 <section className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200 shadow-sm">
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    <form onSubmit={handleSubmit} className="space-y-6" encType="multipart/form-data">
                         {/* Profile Picture */}
                         <div className="flex flex-col items-center sm:items-start sm:flex-row gap-6">
                             <div className="text-center">
                                 {student.profile_picture ? (
-                                    <img 
-                                        src={`/storage/${student.profile_picture}`} 
-                                        alt="Profile" 
+                                    <img
+                                        src={`/storage/${student.profile_picture}`}
+                                        alt="Profile"
                                         className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg mx-auto"
                                     />
                                 ) : (
@@ -121,8 +136,8 @@ const handleSubmit = (e) => {
                                     </div>
                                 </label>
                                 <p className="text-sm text-gray-500 mt-2">
-                                    {data.is_active 
-                                        ? 'Siswa saat ini aktif dalam sistem' 
+                                    {data.is_active
+                                        ? 'Siswa saat ini aktif dalam sistem'
                                         : 'Siswa saat ini tidak aktif dalam sistem'
                                     }
                                 </p>
@@ -142,11 +157,12 @@ const handleSubmit = (e) => {
                                     value={data.nisn}
                                     onChange={(e) => setData('nisn', e.target.value)}
                                     className={`mt-1 block w-full rounded-lg border px-3 py-2 focus:ring-2 focus:border-transparent ${
-                                        errors.nisn 
-                                            ? 'border-red-500 focus:ring-red-500' 
+                                        errors.nisn
+                                            ? 'border-red-500 focus:ring-red-500'
                                             : 'border-gray-300 focus:ring-blue-500'
                                     }`}
                                     placeholder="Masukkan NISN"
+                                    required
                                 />
                                 {errors.nisn && (
                                     <p className="text-red-500 text-xs mt-1">{errors.nisn}</p>
@@ -163,10 +179,11 @@ const handleSubmit = (e) => {
                                     value={data.kelas}
                                     onChange={(e) => setData('kelas', e.target.value)}
                                     className={`mt-1 block w-full rounded-lg border px-3 py-2 focus:ring-2 focus:border-transparent ${
-                                        errors.kelas 
-                                            ? 'border-red-500 focus:ring-red-500' 
+                                        errors.kelas
+                                            ? 'border-red-500 focus:ring-red-500'
                                             : 'border-gray-300 focus:ring-blue-500'
                                     }`}
+                                    required
                                 >
                                     <option value="">Pilih Kelas</option>
                                     <option value="X-A">X-A</option>
@@ -192,11 +209,12 @@ const handleSubmit = (e) => {
                                     value={data.nama_lengkap}
                                     onChange={(e) => setData('nama_lengkap', e.target.value)}
                                     className={`mt-1 block w-full rounded-lg border px-3 py-2 focus:ring-2 focus:border-transparent ${
-                                        errors.nama_lengkap 
-                                            ? 'border-red-500 focus:ring-red-500' 
+                                        errors.nama_lengkap
+                                            ? 'border-red-500 focus:ring-red-500'
                                             : 'border-gray-300 focus:ring-blue-500'
                                     }`}
                                     placeholder="Masukkan nama lengkap"
+                                    required
                                 />
                                 {errors.nama_lengkap && (
                                     <p className="text-red-500 text-xs mt-1">{errors.nama_lengkap}</p>
@@ -214,11 +232,12 @@ const handleSubmit = (e) => {
                                     value={data.email}
                                     onChange={(e) => setData('email', e.target.value)}
                                     className={`mt-1 block w-full rounded-lg border px-3 py-2 focus:ring-2 focus:border-transparent ${
-                                        errors.email 
-                                            ? 'border-red-500 focus:ring-red-500' 
+                                        errors.email
+                                            ? 'border-red-500 focus:ring-red-500'
                                             : 'border-gray-300 focus:ring-blue-500'
                                     }`}
                                     placeholder="Masukkan email"
+                                    required
                                 />
                                 {errors.email && (
                                     <p className="text-red-500 text-xs mt-1">{errors.email}</p>
@@ -236,11 +255,12 @@ const handleSubmit = (e) => {
                                     value={data.no_hp}
                                     onChange={(e) => setData('no_hp', e.target.value)}
                                     className={`mt-1 block w-full rounded-lg border px-3 py-2 focus:ring-2 focus:border-transparent ${
-                                        errors.no_hp 
-                                            ? 'border-red-500 focus:ring-red-500' 
+                                        errors.no_hp
+                                            ? 'border-red-500 focus:ring-red-500'
                                             : 'border-gray-300 focus:ring-blue-500'
                                     }`}
                                     placeholder="Masukkan nomor HP"
+                                    required
                                 />
                                 {errors.no_hp && (
                                     <p className="text-red-500 text-xs mt-1">{errors.no_hp}</p>
@@ -258,11 +278,12 @@ const handleSubmit = (e) => {
                                     value={data.alamat}
                                     onChange={(e) => setData('alamat', e.target.value)}
                                     className={`mt-1 block w-full rounded-lg border px-3 py-2 focus:ring-2 focus:border-transparent ${
-                                        errors.alamat 
-                                            ? 'border-red-500 focus:ring-red-500' 
+                                        errors.alamat
+                                            ? 'border-red-500 focus:ring-red-500'
                                             : 'border-gray-300 focus:ring-blue-500'
                                     }`}
                                     placeholder="Masukkan alamat lengkap"
+                                    required
                                 />
                                 {errors.alamat && (
                                     <p className="text-red-500 text-xs mt-1">{errors.alamat}</p>
@@ -270,10 +291,18 @@ const handleSubmit = (e) => {
                             </div>
                         </div>
 
+                        {/* Debug Info (Hapus di production) */}
+                        <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                            <h3 className="font-medium text-yellow-800">Debug Info:</h3>
+                            <pre className="text-xs mt-2 text-yellow-700">
+                                {JSON.stringify(data, null, 2)}
+                            </pre>
+                        </div>
+
                         {/* Action Buttons */}
                         <div className="flex flex-col sm:flex-row gap-3 justify-end pt-6 border-t border-gray-200">
-                            <Link 
-                                href={route('students.show', student.id)} 
+                            <Link
+                                href={route('students.show', student.id)}
                                 className="bg-gray-500 text-white px-6 py-3 rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-gray-600 transition-colors"
                             >
                                 <span className="material-symbols-outlined">close</span>
