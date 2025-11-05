@@ -14,7 +14,7 @@ class TeacherController extends Controller
     {
          $filters = $request->only(['search', 'jabatanFilter', 'statusFilter']);
         $perPage = $request->get('perPage', 10); // Default 10 data per halaman
-        
+
         $query = Teacher::query();
 
         // Apply filters

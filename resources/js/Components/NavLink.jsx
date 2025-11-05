@@ -1,42 +1,49 @@
-import { Link } from '@inertiajs/react';
+import { Link } from "@inertiajs/react";
 
-export default function NavLink({ active = false, className = '', children, ...props }) {
+export default function NavLink({
+    active = false,
+    className = "",
+    children,
+    ...props
+}) {
+    // Function to determine icon color based on active state and index
+    const getIconColor = (index) => {
+        if (active) return "text-gray-200";
+
+        const colors = [
+            "text-blue-400/80 group-hover:text-blue-300",
+            "text-green-400/80 group-hover:text-green-300",
+            "text-amber-400/80 group-hover:text-amber-300",
+            "text-purple-400/80 group-hover:text-purple-300",
+            "text-rose-400/80 group-hover:text-rose-300",
+        ];
+        return colors[index] || "text-gray-500 group-hover:text-gray-300";
+    };
+
     return (
         <Link
             {...props}
-            className={
-                'relative flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group ' +
-                (active
-                    ? 'text-white bg-gradient-to-r from-blue-600 to-blue-500 shadow-lg shadow-blue-200 transform scale-105'
-                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50/80') +
-                ' ' +
-                className
-            }
-        >
-            {/* Active Indicator */}
-            {active && (
-                <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-blue-400 rounded-full shadow-sm"></div>
-            )}
-
-            {/* Icon Container */}
-            <div className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-300 ${
+            className={`relative flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
                 active
-                    ? 'bg-white/20 text-white'
-                    : 'bg-gray-100 text-gray-600 group-hover:bg-blue-100 group-hover:text-blue-600'
-            }`}>
+                    ? "text-gray-200 bg-gray-800/50 border-gray-400"
+                    : "text-gray-500 hover:text-gray-300 hover:bg-gray-800/30"
+            } ${className}`}
+        >
+            {/* Icon with subtle color */}
+            <div
+                className={`transition-all duration-200 ${getIconColor(
+                    props.index
+                )}`}
+            >
                 {children[0]}
             </div>
 
             {/* Text */}
-            <span className={`font-medium transition-all duration-300 ${
-                active ? 'text-white' : 'group-hover:text-gray-800'
-            }`}>
-                {children[1]}
-            </span>
+            <span className="text-sm font-medium flex-1">{children[1]}</span>
 
-            {/* Hover Effect */}
-            {!active && (
-                <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/5 to-blue-400/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            {/* Active Indicator - Very Subtle */}
+            {active && (
+                <div className="w-1.5 h-1.5 bg-gray-400 rounded-full ml-2"></div>
             )}
         </Link>
     );

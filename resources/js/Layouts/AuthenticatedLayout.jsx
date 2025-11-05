@@ -1,271 +1,302 @@
-import Dropdown from '@/Components/Dropdown';
-import NavLink from '@/Components/NavLink';
-import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
-import { Link, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import Dropdown from "@/Components/Dropdown";
+import NavLink from "@/Components/NavLink";
+import ResponsiveNavLink from "@/Components/ResponsiveNavLink";
+import { Link, usePage } from "@inertiajs/react";
+import { useState } from "react";
 
 export default function AuthenticatedLayout({ header, children }) {
     const user = usePage().props.auth.user;
-    const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
+    const navigation = [
+        {
+            name: "Dashboard",
+            href: route("dashboard"),
+            icon: (
+                <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                    />
+                </svg>
+            ),
+            current: route().current("dashboard"),
+        },
+        {
+            name: "Siswa",
+            href: route("students.index"),
+            icon: (
+                <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
+                    />
+                </svg>
+            ),
+            current: route().current("students.index"),
+        },
+        {
+            name: "Guru",
+            href: route("teachers.index"),
+            icon: (
+                <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
+                </svg>
+            ),
+            current: route().current("teachers.index"),
+        },
+        {
+            name: "Peminjaman",
+            href: route("borrowings.index"),
+            icon: (
+                <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                    />
+                </svg>
+            ),
+            current: route().current("borrowings.index"),
+        },
+        {
+            name: "Inventaris",
+            href: route("inventories.index"),
+            icon: (
+                <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                    />
+                </svg>
+            ),
+            current: route().current("inventories.index"),
+        },
+    ];
+
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30">
+        <div className="min-h-screen bg-gray-950">
             {/* Mobile Sidebar Overlay */}
             {sidebarOpen && (
                 <div
-                    className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+                    className="fixed inset-0 bg-black/40 z-40 lg:hidden"
                     onClick={() => setSidebarOpen(false)}
                 />
             )}
 
             <div className="flex min-h-screen">
                 {/* Sidebar */}
-                <aside className={`
+                <aside
+                    className={`
                     fixed lg:static inset-y-0 left-0 z-50
-                    w-64 flex-shrink-0 bg-white/90 backdrop-blur-sm p-6 flex flex-col justify-between border-r border-gray-200
-                    transform transition-transform duration-300 ease-in-out
-                    ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-                `}>
-                    <div>
-                        <div className="mb-8 flex justify-between items-center lg:block">
-                            <div>
-                                <h1 className="text-xl font-bold text-gray-800">School Library</h1>
-                                <p className="text-sm text-gray-500">Admin Panel</p>
+                    w-72 flex-shrink-0 bg-gray-900/95 p-6 flex flex-col
+                    transform transition-all duration-300 ease-in-out
+                    ${
+                        sidebarOpen
+                            ? "translate-x-0"
+                            : "-translate-x-full lg:translate-x-0"
+                    }
+                    border-r border-gray-800/30
+                `}
+                >
+                    {/* Logo with Color */}
+                    <div className="mb-12">
+                        <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-lg flex items-center justify-center border border-blue-500/30">
+                                <svg
+                                    className="w-5 h-5 text-blue-400"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={1.5}
+                                        d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                                    />
+                                </svg>
                             </div>
-                            <button
-                                onClick={() => setSidebarOpen(false)}
-                                className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
-                            >
-                                <span className="material-symbols-outlined text-gray-600">close</span>
-                            </button>
+                            <div>
+                                <h1 className="text-lg font-semibold text-gray-200">
+                                    School Library
+                                </h1>
+                                <p className="text-xs text-gray-500">
+                                    Management System
+                                </p>
+                            </div>
                         </div>
-
-                        <nav className="flex flex-col gap-2">
-                            <NavLink
-                                href={route('dashboard')}
-                                active={route().current('dashboard')}
-                            >
-                                <svg className="w-5 h-5" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M224,115.55V208a16,16,0,0,1-16,16H168a16,16,0,0,1-16-16V168a8,8,0,0,0-8-8H112a8,8,0,0,0-8,8v40a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V115.55a16,16,0,0,1,5.17-11.78l80-75.48.11-.11a16,16,0,0,1,21.53,0,1.14,1.14,0,0,0,.11.11l80,75.48A16,16,0,0,1,224,115.55Z"></path>
-                                </svg>
-                                <span>Dashboard</span>
-                            </NavLink>
-
-                            <NavLink
-                                href={route('students.index')}
-                                active={route().current('students.index')}
-                            >
-                                <svg className="w-5 h-5" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M117.25,157.92a60,60,0,1,0-66.5,0A95.83,95.83,0,0,0,3.53,195.63a8,8,0,1,0,13.4,8.74,80,80,0,0,1,134.14,0,8,8,0,0,0,13.4-8.74A95.83,95.83,0,0,0,117.25,157.92ZM40,108a44,44,0,1,1,44,44A44.05,44.05,0,0,1,40,108Zm210.14,98.7a8,8,0,0,1-11.07-2.33A79.83,79.83,0,0,0,172,168a8,8,0,0,1,0-16,44,44,0,1,0-16.34-84.87,8,8,0,1,1-5.94-14.85,60,60,0,0,1,55.53,105.64,95.83,95.83,0,0,1,47.22,37.71A8,8,0,0,1,250.14,206.7Z"></path>
-                                </svg>
-                                <span>Siswa</span>
-                            </NavLink>
-
-                            <NavLink
-                                href={route('teachers.index')}
-                                active={route().current('teachers.index')}
-                            >
-                                <svg className="w-5 h-5" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M244.8,150.4a8,8,0,0,1-11.2-1.6A51.6,51.6,0,0,0,192,128a8,8,0,0,1-7.37-4.89,8,8,0,0,1,0-6.22A8,8,0,0,1,192,112a24,24,0,1,0-23.24-30,8,8,0,1,1-15.5-4A40,40,0,1,1,219,117.51a67.94,67.94,0,0,1,27.43,21.68A8,8,0,0,1,244.8,150.4ZM190.92,212a8,8,0,1,1-13.84,8,57,57,0,0,0-98.16,0,8,8,0,1,1-13.84-8,72.06,72.06,0,0,1,33.74-29.92,48,48,0,1,1,58.36,0A72.06,72.06,0,0,1,190.92,212ZM128,176a32,32,0,1,0-32-32A32,32,0,0,0,128,176ZM72,120a8,8,0,0,0-8-8A24,24,0,1,1,87.24,82a8,8,0,1,0,15.5-4A40,40,0,1,0,37,117.51,67.94,67.94,0,0,0,9.6,139.19a8,8,0,1,0,12.8,9.61A51.6,51.6,0,0,1,64,128,8,8,0,0,0,72,120Z"></path>
-                                </svg>
-                                <span>Guru</span>
-                            </NavLink>
-
-                            <NavLink
-                                href={route('borrowings.index')}
-                                active={route().current('borrowings.index')}
-                            >
-                                <svg className="w-5 h-5" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M184,32H72A16,16,0,0,0,56,48V224a8,8,0,0,0,12.24,6.78L128,193.43l59.77,37.35A8,8,0,0,0,200,224V48A16,16,0,0,0,184,32Zm0,16V161.57l-51.77-32.35a8,8,0,0,0-8.48,0L72,161.56V48ZM132.23,177.22a8,8,0,0,0-8.48,0L72,209.57V180.43l56-35,56,35v29.14Z"></path>
-                                </svg>
-                                <span>Peminjaman</span>
-                            </NavLink>
-
-                            <NavLink
-                                href={route('inventories.index')}
-                                active={route().current('inventories.index')}
-                            >
-                                <svg className="w-5 h-5" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M224,48H32A16,16,0,0,0,16,64V88a16,16,0,0,0,16,16v88a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V104a16,16,0,0,0,16-16V64A16,16,0,0,0,224,48ZM208,192H48V104H208ZM224,88H32V64H224V88ZM96,136a8,8,0,0,1,8-8h48a8,8,0,0,1,0,16H104A8,8,0,0,1,96,136Z"></path>
-                                </svg>
-                                <span>Inventaris</span>
-                            </NavLink>
-                        </nav>
                     </div>
 
-                    {/* User Info & Menu Section */}
-                    <div className="space-y-4">
-                        <div className="border-t border-gray-200 pt-4">
-                            <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50/80 border border-gray-200">
-                                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center border border-blue-200">
-                                    <span className="text-sm font-medium text-blue-600">
-                                        {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                                    </span>
+                    {/* Navigation with Colored Icons */}
+                    <nav className="space-y-1 flex-1">
+                        {navigation.map((item, index) => (
+                            <NavLink
+                                key={item.name}
+                                href={item.href}
+                                active={item.current}
+                                index={index}
+                                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:text-gray-200 hover:bg-gray-800/30 transition-all duration-200 group"
+                            >
+                                {item.icon}
+                                <span className="text-sm font-medium">
+                                    {item.name}
+                                </span>
+                            </NavLink>
+                        ))}
+                    </nav>
+
+                    {/* User Section */}
+                    <div className="pt-6 border-t border-gray-800/30">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-8 h-8 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-lg flex items-center justify-center border border-blue-500/30">
+                                <span className="text-xs font-medium text-blue-400">
+                                    {user.name
+                                        .split(" ")
+                                        .map((n) => n[0])
+                                        .join("")
+                                        .toUpperCase()}
+                                </span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="text-sm font-medium text-gray-200 truncate">
+                                    {user.name}
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="text-sm font-medium text-gray-800 truncate">{user.name}</div>
-                                    <div className="text-xs text-gray-500 truncate">{user.email}</div>
+                                <div className="text-xs text-gray-500 truncate">
+                                    Administrator
                                 </div>
                             </div>
                         </div>
 
-                        {/* Profile & Logout Links */}
+                        {/* Action Links with Colored Icons */}
                         <div className="space-y-1">
                             <ResponsiveNavLink
-                                href={route('profile.edit')}
-                                active={route().current('profile.edit')}
+                                href={route("profile.edit")}
+                                active={route().current("profile.edit")}
+                                className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-400 hover:text-gray-200 hover:bg-gray-800/30 transition-all duration-200 group"
                             >
-                                <svg className="w-5 h-5" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24ZM74.08,197.5a64,64,0,0,1,107.84,0,87.83,87.83,0,0,1-107.84,0ZM96,120a32,32,0,1,1,32,32A32,32,0,0,1,96,120Zm97.76,66.41a79.66,79.66,0,0,0-27.8-22.75,48,48,0,1,0-59.92,0,79.66,79.66,0,0,0-27.8,22.75,88,88,0,1,1,115.52,0Z"></path>
+                                <svg
+                                    className="w-4 h-4 text-green-400/80 group-hover:text-green-300"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={1.5}
+                                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                    />
                                 </svg>
-                                <span>Profile</span>
+                                Profile
                             </ResponsiveNavLink>
 
                             <ResponsiveNavLink
                                 method="post"
-                                href={route('logout')}
+                                href={route("logout")}
                                 as="button"
-                                className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-red-50 text-red-500 hover:text-red-700 transition-colors border border-transparent hover:border-red-200 w-full text-left"
+                                className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-400 hover:text-gray-200 hover:bg-gray-800/30 transition-all duration-200 group w-full text-left"
                             >
-                                <svg className="w-5 h-5" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M120,216a8,8,0,0,1-8,8H48a16,16,0,0,1-16-16V48A16,16,0,0,1,48,32h64a8,8,0,0,1,0,16H48V208h64A8,8,0,0,1,120,216Zm109.66-93.66-40-40a8,8,0,0,0-11.32,11.32L204.69,120H112a8,8,0,0,0,0,16h92.69l-26.35,26.34a8,8,0,0,0,11.32,11.32l40-40A8,8,0,0,0,229.66,122.34Z"></path>
+                                <svg
+                                    className="w-4 h-4 text-rose-400/80 group-hover:text-rose-300"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={1.5}
+                                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                                    />
                                 </svg>
-                                <span>Log Out</span>
+                                Log Out
                             </ResponsiveNavLink>
                         </div>
                     </div>
                 </aside>
 
-                {/* Main Content */}
+                {/* Main Content Area */}
                 <div className="flex-1 flex flex-col min-w-0">
-                    {/* Top Navigation Bar */}
-                    <nav className="border-b border-gray-200 bg-white/90 backdrop-blur-sm">
-                        <div className="px-4 sm:px-6 lg:px-8">
-                            <div className="flex h-16 justify-between items-center">
-                                <div className="flex items-center">
-                                    <button
-                                        onClick={() => setSidebarOpen(true)}
-                                        className="lg:hidden inline-flex items-center justify-center rounded-md p-2 text-gray-600 transition duration-150 ease-in-out hover:bg-gray-100 hover:text-gray-800 focus:bg-gray-100 focus:text-gray-800 focus:outline-none"
-                                    >
-                                        <span className="material-symbols-outlined">menu</span>
-                                    </button>
+                    {/* Simple Top Bar */}
+                    <div className="h-16 border-b border-gray-800/30 bg-gray-900/50 flex items-center px-6 lg:px-8">
+                        <button
+                            onClick={() => setSidebarOpen(true)}
+                            className="lg:hidden p-2 rounded-lg text-gray-400 hover:text-gray-200 hover:bg-gray-800/30 transition-colors"
+                        >
+                            <svg
+                                className="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={1.5}
+                                    d="M4 6h16M4 12h16M4 18h16"
+                                />
+                            </svg>
+                        </button>
 
-                                    <div className="ml-4 lg:ml-0">
-                                        <h1 className="text-lg sm:text-xl font-bold text-gray-800 truncate">
-                                            School Library Management
-                                        </h1>
-                                    </div>
-                                </div>
+                        <div className="ml-4 lg:ml-0">
+                            <h1 className="text-lg font-medium text-gray-200">
+                                {navigation.find((item) => item.current)
+                                    ?.name || "Dashboard"}
+                            </h1>
+                        </div>
 
-                                {/* User Dropdown for Mobile */}
-                                <div className="lg:hidden">
-                                    <Dropdown>
-                                        <Dropdown.Trigger>
-                                            <span className="inline-flex rounded-md">
-                                                <button
-                                                    type="button"
-                                                    className="inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-700 transition duration-150 ease-in-out hover:text-gray-900 focus:outline-none"
-                                                >
-                                                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center border border-blue-200 mr-2">
-                                                        <span className="text-sm font-medium text-blue-600">
-                                                            {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                                                        </span>
-                                                    </div>
-                                                    <span className="hidden sm:block">{user.name}</span>
-                                                    <svg
-                                                        className="-me-0.5 ms-2 h-4 w-4"
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                        viewBox="0 0 20 20"
-                                                        fill="currentColor"
-                                                    >
-                                                        <path
-                                                            fillRule="evenodd"
-                                                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                                            clipRule="evenodd"
-                                                        />
-                                                    </svg>
-                                                </button>
-                                            </span>
-                                        </Dropdown.Trigger>
-
-                                        <Dropdown.Content>
-                                            <Dropdown.Link href={route('profile.edit')}>
-                                                Profile
-                                            </Dropdown.Link>
-                                            <Dropdown.Link
-                                                href={route('logout')}
-                                                method="post"
-                                                as="button"
-                                            >
-                                                Log Out
-                                            </Dropdown.Link>
-                                        </Dropdown.Content>
-                                    </Dropdown>
-                                </div>
-
-                                {/* User Info for Desktop */}
-                                <div className="hidden lg:flex items-center">
-                                    <div className="relative">
-                                        <Dropdown>
-                                            <Dropdown.Trigger>
-                                                <span className="inline-flex rounded-md">
-                                                    <button
-                                                        type="button"
-                                                        className="inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-700 transition duration-150 ease-in-out hover:text-gray-900 focus:outline-none"
-                                                    >
-                                                        {user.name}
-                                                        <svg
-                                                            className="-me-0.5 ms-2 h-4 w-4"
-                                                            xmlns="http://www.w3.org/2000/svg"
-                                                            viewBox="0 0 20 20"
-                                                            fill="currentColor"
-                                                        >
-                                                            <path
-                                                                fillRule="evenodd"
-                                                                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                                                clipRule="evenodd"
-                                                            />
-                                                        </svg>
-                                                    </button>
-                                                </span>
-                                            </Dropdown.Trigger>
-
-                                            <Dropdown.Content>
-                                                <Dropdown.Link href={route('profile.edit')}>
-                                                    Profile
-                                                </Dropdown.Link>
-                                                <Dropdown.Link
-                                                    href={route('logout')}
-                                                    method="post"
-                                                    as="button"
-                                                >
-                                                    Log Out
-                                                </Dropdown.Link>
-                                            </Dropdown.Content>
-                                        </Dropdown>
-                                    </div>
-                                </div>
+                        <div className="lg:hidden ml-auto">
+                            <div className="flex items-center gap-2 text-sm text-gray-400">
+                                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                                {user.name.split(" ")[0]}
                             </div>
                         </div>
-                    </nav>
+                    </div>
 
                     {/* Page Content */}
-                    <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
-                        <div className="max-w-7xl mx-auto">
-                            {children}
-                        </div>
+                    <main className="flex-1 p-6 lg:p-8">
+                        <div className="max-w-7xl mx-auto">{children}</div>
                     </main>
                 </div>
             </div>
-
-            {/* Material Icons CSS */}
-            <style jsx>{`
-                @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
-                .material-symbols-outlined {
-                    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-                }
-            `}</style>
         </div>
     );
 }
