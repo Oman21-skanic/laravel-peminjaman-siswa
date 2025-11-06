@@ -10,10 +10,10 @@ use Illuminate\Support\Facades\Redirect;
 
 class InventoryController extends Controller
 {
-      public function index(Request $request)
+    public function index(Request $request)
     {
         $filters = $request->only(['search', 'kategoriFilter', 'statusFilter']);
-        $perPage = $request->get('perPage', 10); // Default 10 data per halaman
+        $perPage = $request->get('perPage', 10);
 
         $query = Inventory::query();
 
@@ -31,11 +31,20 @@ class InventoryController extends Controller
         }
 
         if (!empty($filters['statusFilter'])) {
-            $query->where('status', $filters['statusFilter']);
+            $isActive = $filters['statusFilter'] === 'Aktif';
+            $query->where('is_active', $isActive);
         }
 
+        $inventories = $query->paginate($perPage)->withQueryString();
+
+        // Convert is_active to boolean for frontend
+        $inventories->getCollection()->transform(function ($inventory) {
+            $inventory->is_active = (bool)$inventory->is_active;
+            return $inventory;
+        });
+
         return Inertia::render('Inventories/Index', [
-            'inventories' => $query->paginate($perPage)->withQueryString(),
+            'inventories' => $inventories,
             'filters' => $filters,
             'perPage' => (int)$perPage,
         ]);
@@ -55,10 +64,14 @@ class InventoryController extends Controller
             'deskripsi' => 'required|string',
             'status' => 'required|string|in:available,borrowed,maintenance',
             'lokasi_barang' => 'required|string|max:255',
-            'is_active' => 'required|string|in:available,unavailable',
+            'is_active' => 'required|boolean',
             'foto_barang' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
+        // Convert boolean to integer for database
+        $validated['is_active'] = (int)$validated['is_active'];
+
+        // Handle file upload
         if ($request->hasFile('foto_barang')) {
             $validated['foto_barang'] = $request->file('foto_barang')->store('inventory_photos', 'public');
         }
@@ -70,6 +83,9 @@ class InventoryController extends Controller
 
     public function show(Inventory $inventory)
     {
+        // Convert is_active to boolean for frontend
+        $inventory->is_active = (bool)$inventory->is_active;
+
         return Inertia::render('Inventories/Show', [
             'inventory' => $inventory->load(['borrowings.student']),
         ]);
@@ -77,6 +93,9 @@ class InventoryController extends Controller
 
     public function edit(Inventory $inventory)
     {
+        // Convert is_active to boolean for frontend
+        $inventory->is_active = (bool)$inventory->is_active;
+
         return Inertia::render('Inventories/Edit', [
             'inventory' => $inventory->load(['borrowings.student']),
         ]);
@@ -84,34 +103,32 @@ class InventoryController extends Controller
 
     public function update(Request $request, Inventory $inventory)
     {
-        // Validation rules untuk update
-        $rules = [
+        $validated = $request->validate([
             'kode_barang' => 'required|string|max:255|unique:inventories,kode_barang,' . $inventory->id,
             'nama_barang' => 'required|string|max:255',
             'kategori' => 'required|string|max:255',
             'deskripsi' => 'required|string',
             'status' => 'required|string|in:available,borrowed,maintenance',
             'lokasi_barang' => 'required|string|max:255',
-            'is_active' => 'required|string|in:available,unavailable',
-        ];
+            'is_active' => 'boolean',
+            'foto_barang' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
 
-        // Hanya validasi foto_barang jika ada file yang diupload
-        if ($request->hasFile('foto_barang')) {
-            $rules['foto_barang'] = 'image|mimes:jpeg,png,jpg,gif|max:2048';
+        // Convert boolean to integer for database
+        if (isset($validated['is_active'])) {
+            $validated['is_active'] = (int)$validated['is_active'];
         }
 
-        $validated = $request->validate($rules);
-
-        // Handle file upload hanya jika ada file baru
+        // Handle file upload
         if ($request->hasFile('foto_barang')) {
-            // Hapus foto lama jika ada
+            // Delete old photo if exists
             if ($inventory->foto_barang) {
                 Storage::disk('public')->delete($inventory->foto_barang);
             }
             $validated['foto_barang'] = $request->file('foto_barang')->store('inventory_photos', 'public');
         } else {
-            // Jika tidak ada file baru, pertahankan foto lama
-            unset($validated['foto_barang']);
+            // Keep the existing photo if no new file is uploaded
+            $validated['foto_barang'] = $inventory->foto_barang;
         }
 
         $inventory->update($validated);
@@ -121,9 +138,11 @@ class InventoryController extends Controller
 
     public function destroy(Inventory $inventory)
     {
+        // Delete photo if exists
         if ($inventory->foto_barang) {
             Storage::disk('public')->delete($inventory->foto_barang);
         }
+
         $inventory->delete();
 
         return Redirect::route('inventories.index')->with('success', 'Barang berhasil dihapus.');

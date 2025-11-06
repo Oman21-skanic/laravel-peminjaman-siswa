@@ -20,6 +20,11 @@ class Inventory extends Model
         'foto_barang',
     ];
 
+    // Add casting for is_active
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
+
     public function category()
     {
         return $this->belongsTo(Category::class, 'kategori');

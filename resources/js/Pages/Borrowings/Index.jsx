@@ -1,150 +1,506 @@
-import { Head, router, usePage } from '@inertiajs/react';
-import { useState, useMemo } from 'react';
-import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
-import FlashMessage from '../../Components/FlashMessage';
-import PageHeader from '../../Components/PageHeader';
-import BorrowingStats from '../../Components/BorrowingStats';
-import SearchFilter from '../../Components/SearchFilter';
-import SelectFilter from '../../Components/SelectFilter';
-import FilterButtons from '../../Components/FilterButtons';
-import PerPageSelector from '../../Components/PerPageSelector';
-import BorrowingTable from '../../Components/BorrowingTable';
-import EmptyState from '../../Components/EmptyState';
-import Pagination from '../../Components/Pagination';
+import { Head, router, usePage } from "@inertiajs/react";
+import { useState, useMemo } from "react";
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import FlashMessage from "@/Components/FlashMessage";
+import PageHeader from "@/Components/PageHeader";
+import BarChart from "@/Components/BarChart";
+import PieChart from "@/Components/PieChart";
+import SearchFilter from "@/Components/SearchFilter";
+import SelectFilter from "@/Components/SelectFilter";
+import FilterButtons from "@/Components/FilterButtons";
+import PerPageSelector from "@/Components/PerPageSelector";
+import DataTable from "@/Components/DataTable";
+import EmptyState from "@/Components/EmptyState";
+import Pagination from "@/Components/Pagination";
 
-export default function Index({ auth, borrowings, filters = {}, perPage = 10 }) {
+export default function Index({
+    auth,
+    borrowings,
+    filters = {},
+    perPage = 10,
+}) {
     const { url } = usePage();
-    const [search, setSearch] = useState(filters.search || '');
-    const [statusFilter, setStatusFilter] = useState(filters.statusFilter || '');
+    const [search, setSearch] = useState(filters.search || "");
+    const [statusFilter, setStatusFilter] = useState(
+        filters.statusFilter || ""
+    );
     const [selectedPerPage, setSelectedPerPage] = useState(perPage);
 
     // Filter data secara client-side untuk data yang sudah di-paginate
     const filteredBorrowings = useMemo(() => {
-        return borrowings.data.filter(borrowing => {
-            const matchesSearch = search === '' ||
-                borrowing.student.nama_lengkap.toLowerCase().includes(search.toLowerCase()) ||
-                borrowing.inventory.nama_barang.toLowerCase().includes(search.toLowerCase()) ||
-                borrowing.inventory.kode_barang.includes(search);
+        return borrowings.data.filter((borrowing) => {
+            const matchesSearch =
+                search === "" ||
+                borrowing.student?.nama_lengkap
+                    .toLowerCase()
+                    .includes(search.toLowerCase()) ||
+                borrowing.inventory?.nama_barang
+                    .toLowerCase()
+                    .includes(search.toLowerCase()) ||
+                borrowing.inventory?.kode_barang.includes(search);
 
-            const matchesStatus = statusFilter === '' ||
-                (statusFilter === 'borrowed' && !borrowing.returned_at) ||
-                (statusFilter === 'returned' && borrowing.returned_at);
+            const matchesStatus =
+                statusFilter === "" ||
+                (statusFilter === "borrowed" && !borrowing.returned_at) ||
+                (statusFilter === "returned" && borrowing.returned_at);
 
             return matchesSearch && matchesStatus;
         });
     }, [borrowings.data, search, statusFilter]);
 
     const handleDelete = (id) => {
-        if (confirm('Apakah Anda yakin ingin menghapus data peminjaman ini?')) {
-            router.delete(route('borrowings.destroy', id));
+        if (confirm("Apakah Anda yakin ingin menghapus data peminjaman ini?")) {
+            router.delete(route("borrowings.destroy", id));
+        }
+    };
+
+    const handleReturn = (id) => {
+        if (confirm("Apakah Anda yakin ingin menandai sebagai dikembalikan?")) {
+            router.put(route("borrowings.return", id));
         }
     };
 
     const handleFilter = () => {
-        router.get(route('borrowings.index'), {
-            search,
-            statusFilter,
-            perPage: selectedPerPage,
-        }, {
-            preserveState: true,
-            replace: true,
-        });
+        router.get(
+            route("borrowings.index"),
+            {
+                search,
+                statusFilter,
+                perPage: selectedPerPage,
+            },
+            {
+                preserveState: true,
+                replace: true,
+            }
+        );
     };
 
     const clearFilters = () => {
-        setSearch('');
-        setStatusFilter('');
+        setSearch("");
+        setStatusFilter("");
         setSelectedPerPage(10);
-        router.get(route('borrowings.index'), {
-            perPage: 10,
-        }, {
-            preserveState: true,
-            replace: true,
-        });
+        router.get(
+            route("borrowings.index"),
+            {
+                perPage: 10,
+            },
+            {
+                preserveState: true,
+                replace: true,
+            }
+        );
     };
 
     const handlePerPageChange = (value) => {
         setSelectedPerPage(value);
-        router.get(route('borrowings.index'), {
-            search,
-            statusFilter,
-            perPage: value,
-        }, {
-            preserveState: true,
-            replace: true,
-        });
+        router.get(
+            route("borrowings.index"),
+            {
+                search,
+                statusFilter,
+                perPage: value,
+            },
+            {
+                preserveState: true,
+                replace: true,
+            }
+        );
+    };
+
+    // Data untuk charts
+    const monthlyData = useMemo(() => {
+        const months = [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "Mei",
+            "Jun",
+            "Jul",
+            "Agu",
+            "Sep",
+            "Okt",
+            "Nov",
+            "Des",
+        ];
+        const currentMonth = new Date().getMonth();
+
+        return months.slice(0, currentMonth + 1).map((month, index) => ({
+            name: month,
+            value: Math.floor(Math.random() * 20) + 5, // Mock data untuk demo
+        }));
+    }, []);
+
+    const borrowedCount = borrowings.data.filter((b) => !b.returned_at).length;
+    const returnedCount = borrowings.data.filter((b) => b.returned_at).length;
+
+    const getStatusBadge = (borrowing) => {
+        if (borrowing.returned_at) {
+            return {
+                color: "bg-green-500/20 text-green-400 border border-green-500/30",
+                label: "Dikembalikan",
+                icon: "✅",
+            };
+        } else {
+            const borrowedDate = new Date(borrowing.borrowed_at);
+            const today = new Date();
+            const diffTime = today - borrowedDate;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays > 7) {
+                return {
+                    color: "bg-red-500/20 text-red-400 border border-red-500/30",
+                    label: "Terlambat",
+                    icon: "⏰",
+                };
+            } else {
+                return {
+                    color: "bg-blue-500/20 text-blue-400 border border-blue-500/30",
+                    label: "Dipinjam",
+                    icon: "📚",
+                };
+            }
+        }
+    };
+
+    const getDaysRemaining = (borrowedAt) => {
+        const borrowedDate = new Date(borrowedAt);
+        const today = new Date();
+        const diffTime = today - borrowedDate;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return Math.max(0, 7 - diffDays);
     };
 
     return (
         <AuthenticatedLayout
             user={auth.user}
-            header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Manajemen Peminjaman</h2>}
+            header={
+                <h2 className="text-xl font-semibold leading-tight text-white">
+                    Manajemen Peminjaman
+                </h2>
+            }
         >
             <Head title="Manajemen Peminjaman" />
 
-            <div className="max-w-7xl mx-auto">
+            <div className="max-w-7xl mx-auto space-y-8 px-4 sm:px-6 lg:px-8">
                 <FlashMessage />
 
                 <PageHeader
                     title="Manajemen Peminjaman"
-                    createRoute={route('borrowings.create')}
+                    createRoute={route("borrowings.create")}
                     createText="Tambah Peminjaman"
                 />
 
                 {/* Statistics Section */}
-                <BorrowingStats borrowings={borrowings} />
+                <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <BarChart
+                        title="Trend Peminjaman Bulan Ini"
+                        data={monthlyData}
+                        color="orange"
+                        height={320}
+                    />
+
+                    <PieChart
+                        title="Status Peminjaman"
+                        total={borrowings.data.length}
+                        activeCount={borrowedCount}
+                        inactiveCount={returnedCount}
+                        activeLabel="Sedang Dipinjam"
+                        inactiveLabel="Sudah Dikembalikan"
+                    />
+                </section>
+
+                {/* Quick Stats */}
+                <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700/50 text-center">
+                        <div className="text-2xl font-bold text-blue-400 mb-1">
+                            {borrowedCount}
+                        </div>
+                        <div className="text-sm text-gray-400">
+                            Sedang Dipinjam
+                        </div>
+                    </div>
+                    <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700/50 text-center">
+                        <div className="text-2xl font-bold text-green-400 mb-1">
+                            {returnedCount}
+                        </div>
+                        <div className="text-sm text-gray-400">
+                            Dikembalikan
+                        </div>
+                    </div>
+                    <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700/50 text-center">
+                        <div className="text-2xl font-bold text-red-400 mb-1">
+                            {
+                                borrowings.data.filter((b) => {
+                                    if (!b.returned_at) {
+                                        const borrowedDate = new Date(
+                                            b.borrowed_at
+                                        );
+                                        const today = new Date();
+                                        const diffDays = Math.ceil(
+                                            (today - borrowedDate) /
+                                                (1000 * 60 * 60 * 24)
+                                        );
+                                        return diffDays > 7;
+                                    }
+                                    return false;
+                                }).length
+                            }
+                        </div>
+                        <div className="text-sm text-gray-400">Terlambat</div>
+                    </div>
+                    <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700/50 text-center">
+                        <div className="text-2xl font-bold text-purple-400 mb-1">
+                            {borrowings.data.length}
+                        </div>
+                        <div className="text-sm text-gray-400">
+                            Total Peminjaman
+                        </div>
+                    </div>
+                </section>
 
                 {/* Borrowings Table Section */}
-                <section className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200 shadow-sm">
-                    {/* Filters */}
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-4">
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
-                            <SearchFilter
-                                value={search}
-                                onChange={setSearch}
-                                onSearch={handleFilter}
-                                placeholder="Cari siswa atau barang..."
-                                className="w-full sm:w-64"
-                            />
+                <section className="bg-gray-800/50 rounded-xl p-4 sm:p-6 border border-gray-700/50">
+                    {/* Filters - Improved Layout */}
+                    <div className="flex flex-col gap-4 mb-6">
+                        {/* Top Row - Search and Per Page */}
+                        <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
+                            <div className="w-full lg:w-80">
+                                <SearchFilter
+                                    value={search}
+                                    onChange={setSearch}
+                                    onSearch={handleFilter}
+                                    placeholder="Cari berdasarkan nama siswa atau barang..."
+                                    className="w-full"
+                                />
+                            </div>
 
-                            <SelectFilter
-                                value={statusFilter}
-                                onChange={setStatusFilter}
-                                options={[
-                                    { value: '', label: 'Semua Status' },
-                                    { value: 'borrowed', label: 'Sedang Dipinjam' },
-                                    { value: 'returned', label: 'Sudah Dikembalikan' }
-                                ]}
-                                placeholder="Filter Status"
-                                className="w-full sm:w-48"
+                            <PerPageSelector
+                                value={selectedPerPage}
+                                onChange={handlePerPageChange}
+                                className="w-full lg:w-auto"
                             />
+                        </div>
+
+                        {/* Bottom Row - Filters and Buttons */}
+                        <div className="flex flex-col lg:flex-row gap-3 items-start lg:items-center">
+                            <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+                                <SelectFilter
+                                    value={statusFilter}
+                                    onChange={setStatusFilter}
+                                    options={[
+                                        { value: "", label: "Semua Status" },
+                                        {
+                                            value: "borrowed",
+                                            label: "Sedang Dipinjam",
+                                        },
+                                        {
+                                            value: "returned",
+                                            label: "Sudah Dikembalikan",
+                                        },
+                                    ]}
+                                    placeholder="Filter Status"
+                                    className="w-full sm:w-48"
+                                />
+                            </div>
 
                             <FilterButtons
                                 onApply={handleFilter}
                                 onReset={clearFilters}
-                                className="w-full sm:w-auto"
+                                className="w-full lg:w-auto"
                             />
                         </div>
-
-                        {/* Per Page Selector */}
-                        <PerPageSelector
-                            value={selectedPerPage}
-                            onChange={handlePerPageChange}
-                            className="w-full sm:w-auto"
-                        />
                     </div>
 
                     {/* Table */}
                     {filteredBorrowings.length === 0 ? (
-                        <EmptyState message="Tidak ada data peminjaman yang ditemukan" />
+                        <EmptyState
+                            message="Tidak ada data peminjaman yang ditemukan"
+                            description="Coba ubah filter pencarian atau tambahkan peminjaman baru"
+                            createRoute={route("borrowings.create")}
+                            createText="Tambah Peminjaman"
+                        />
                     ) : (
                         <>
-                            <BorrowingTable
-                                data={filteredBorrowings}
-                                viewRoute={(id) => route('borrowings.show', id)}
-                                editRoute={(id) => route('borrowings.edit', id)}
-                                onDelete={handleDelete}
-                            />
+                            <div className="mb-4 text-sm text-gray-400">
+                                Menampilkan {filteredBorrowings.length} dari{" "}
+                                {borrowings.total} peminjaman
+                            </div>
+
+                            <div className="overflow-hidden">
+                                <DataTable
+                                    data={filteredBorrowings}
+                                    columns={[
+                                        {
+                                            key: "student",
+                                            header: "Siswa",
+                                            render: (borrowing) => (
+                                                <div className="flex items-center gap-3">
+                                                    {borrowing.student
+                                                        ?.profile_picture ? (
+                                                        <img
+                                                            src={`/storage/${borrowing.student.profile_picture}`}
+                                                            alt="Profile"
+                                                            className="w-8 h-8 rounded-full object-cover border border-gray-600"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center border border-gray-600">
+                                                            <span className="text-gray-400 text-xs">
+                                                                👨‍🎓
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                    <div>
+                                                        <div className="font-medium text-white text-sm">
+                                                            {
+                                                                borrowing
+                                                                    .student
+                                                                    ?.nama_lengkap
+                                                            }
+                                                        </div>
+                                                        <div className="text-xs text-gray-400">
+                                                            {
+                                                                borrowing
+                                                                    .student
+                                                                    ?.nisn
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ),
+                                            mobileSpan: true,
+                                        },
+                                        {
+                                            key: "inventory",
+                                            header: "Barang",
+                                            render: (borrowing) => (
+                                                <div>
+                                                    <div className="font-medium text-white text-sm">
+                                                        {
+                                                            borrowing.inventory
+                                                                ?.nama_barang
+                                                        }
+                                                    </div>
+                                                    <div className="text-xs text-gray-400">
+                                                        {
+                                                            borrowing.inventory
+                                                                ?.kode_barang
+                                                        }
+                                                    </div>
+                                                </div>
+                                            ),
+                                        },
+                                        {
+                                            key: "borrowed_at",
+                                            header: "Tanggal Pinjam",
+                                            render: (borrowing) => (
+                                                <div className="text-gray-300 text-sm">
+                                                    {new Date(
+                                                        borrowing.borrowed_at
+                                                    ).toLocaleDateString(
+                                                        "id-ID"
+                                                    )}
+                                                </div>
+                                            ),
+                                        },
+                                        {
+                                            key: "returned_at",
+                                            header: "Tanggal Kembali",
+                                            render: (borrowing) => (
+                                                <div className="text-gray-300 text-sm">
+                                                    {borrowing.returned_at
+                                                        ? new Date(
+                                                              borrowing.returned_at
+                                                          ).toLocaleDateString(
+                                                              "id-ID"
+                                                          )
+                                                        : "-"}
+                                                </div>
+                                            ),
+                                        },
+                                        {
+                                            key: "days_remaining",
+                                            header: "Sisa Hari",
+                                            render: (borrowing) => {
+                                                if (borrowing.returned_at) {
+                                                    return (
+                                                        <span className="text-gray-400 text-sm">
+                                                            -
+                                                        </span>
+                                                    );
+                                                }
+                                                const daysRemaining =
+                                                    getDaysRemaining(
+                                                        borrowing.borrowed_at
+                                                    );
+                                                return (
+                                                    <span
+                                                        className={`text-sm font-medium ${
+                                                            daysRemaining <= 2
+                                                                ? "text-red-400"
+                                                                : daysRemaining <=
+                                                                  4
+                                                                ? "text-yellow-400"
+                                                                : "text-green-400"
+                                                        }`}
+                                                    >
+                                                        {daysRemaining} hari
+                                                    </span>
+                                                );
+                                            },
+                                        },
+                                        {
+                                            key: "status",
+                                            header: "Status",
+                                            render: (borrowing) => {
+                                                const statusBadge =
+                                                    getStatusBadge(borrowing);
+                                                return (
+                                                    <span
+                                                        className={`px-2 py-1 rounded-full text-xs font-medium ${statusBadge.color}`}
+                                                    >
+                                                        {statusBadge.icon}{" "}
+                                                        {statusBadge.label}
+                                                    </span>
+                                                );
+                                            },
+                                        },
+                                    ]}
+                                    viewRoute={(id) =>
+                                        route("borrowings.show", id)
+                                    }
+                                    editRoute={(id) =>
+                                        route("borrowings.edit", id)
+                                    }
+                                    onDelete={handleDelete}
+                                    customActions={(item) =>
+                                        !item.returned_at && (
+                                            <button
+                                                onClick={() =>
+                                                    handleReturn(item.id)
+                                                }
+                                                className="p-2 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 hover:text-green-300 border border-green-500/30 transition-all duration-300 hover:scale-110"
+                                                title="Tandai Dikembalikan"
+                                            >
+                                                <svg
+                                                    className="w-4 h-4"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth={2}
+                                                        d="M5 13l4 4L19 7"
+                                                    />
+                                                </svg>
+                                            </button>
+                                        )
+                                    }
+                                />
+                            </div>
+
                             <Pagination data={borrowings} />
                         </>
                     )}

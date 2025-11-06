@@ -35,8 +35,16 @@ class StudentController extends Controller
             $query->where('is_active', $isActive);
         }
 
+        $students = $query->paginate($perPage)->withQueryString();
+
+        // Convert is_active to boolean for frontend
+        $students->getCollection()->transform(function ($student) {
+            $student->is_active = (bool)$student->is_active;
+            return $student;
+        });
+
         return Inertia::render('Students/Index', [
-            'students' => $query->paginate($perPage)->withQueryString(),
+            'students' => $students,
             'filters' => $filters,
             'perPage' => (int)$perPage,
         ]);
@@ -60,6 +68,9 @@ class StudentController extends Controller
             'is_active' => 'required|boolean',
         ]);
 
+        // Convert boolean to integer for database
+        $validated['is_active'] = (int)$validated['is_active'];
+
         // Handle file upload
         if ($request->hasFile('profile_picture')) {
             $validated['profile_picture'] = $request->file('profile_picture')->store('profile_pictures', 'public');
@@ -72,6 +83,9 @@ class StudentController extends Controller
 
     public function show(Student $student)
     {
+        // Convert is_active to boolean for frontend
+        $student->is_active = (bool)$student->is_active;
+
         return Inertia::render('Students/Show', [
             'student' => $student,
         ]);
@@ -79,6 +93,9 @@ class StudentController extends Controller
 
     public function edit(Student $student)
     {
+        // Convert is_active to boolean for frontend
+        $student->is_active = (bool)$student->is_active;
+
         return Inertia::render('Students/Edit', [
             'student' => $student,
         ]);
@@ -96,6 +113,11 @@ class StudentController extends Controller
             'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'is_active' => 'boolean',
         ]);
+
+        // Convert boolean to integer for database
+        if (isset($validated['is_active'])) {
+            $validated['is_active'] = (int)$validated['is_active'];
+        }
 
         // Handle file upload
         if ($request->hasFile('profile_picture')) {

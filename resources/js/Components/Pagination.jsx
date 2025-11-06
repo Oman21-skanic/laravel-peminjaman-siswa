@@ -1,59 +1,98 @@
-import { router } from '@inertiajs/react';
+import { router } from "@inertiajs/react";
 
-export default function Pagination({
-    data,
-    showInfo = true,
-    className = ""
-}) {
+export default function Pagination({ data, showInfo = true, className = "" }) {
     if (!data.data || data.data.length === 0) return null;
 
+    const PaginationButton = ({
+        onClick,
+        disabled,
+        children,
+        active = false,
+    }) => (
+        <button
+            onClick={onClick}
+            disabled={disabled}
+            className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+                active
+                    ? "bg-blue-500 text-white border border-blue-500 shadow-lg"
+                    : disabled
+                    ? "bg-gray-700/30 text-gray-500 cursor-not-allowed border border-gray-600/30"
+                    : "bg-gray-700/50 text-gray-300 hover:bg-gray-600/50 hover:text-white border border-gray-600/50 hover:border-gray-500/50"
+            }`}
+        >
+            {children}
+        </button>
+    );
+
     return (
-        <div className={`mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 ${className}`}>
+        <div
+            className={`flex flex-col lg:flex-row items-center justify-between gap-4 mt-6 ${className}`}
+        >
             {showInfo && (
-                <div className="text-sm text-gray-700">
-                    Menampilkan {data.from} sampai {data.to} dari {data.total} data
+                <div className="text-sm text-gray-400">
+                    Menampilkan{" "}
+                    <span className="text-white font-medium">{data.from}</span>{" "}
+                    sampai{" "}
+                    <span className="text-white font-medium">{data.to}</span>{" "}
+                    dari{" "}
+                    <span className="text-white font-medium">{data.total}</span>{" "}
+                    data
                 </div>
             )}
-            <div className="flex gap-1">
+            <div className="flex items-center gap-2">
                 {/* Previous Button */}
-                <button
+                <PaginationButton
                     onClick={() => router.get(data.prev_page_url)}
                     disabled={!data.prev_page_url}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                        !data.prev_page_url
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                    }`}
                 >
-                    Previous
-                </button>
+                    <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 19l-7-7 7-7"
+                        />
+                    </svg>
+                </PaginationButton>
 
                 {/* Page Numbers */}
                 {data.links.slice(1, -1).map((link, index) => (
-                    <button
+                    <PaginationButton
                         key={index}
                         onClick={() => router.get(link.url)}
-                        className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                            link.active
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                        }`}
-                        dangerouslySetInnerHTML={{ __html: link.label }}
-                    />
+                        active={link.active}
+                        disabled={!link.url}
+                    >
+                        <span
+                            dangerouslySetInnerHTML={{ __html: link.label }}
+                        />
+                    </PaginationButton>
                 ))}
 
                 {/* Next Button */}
-                <button
+                <PaginationButton
                     onClick={() => router.get(data.next_page_url)}
                     disabled={!data.next_page_url}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                        !data.next_page_url
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                    }`}
                 >
-                    Next
-                </button>
+                    <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                        />
+                    </svg>
+                </PaginationButton>
             </div>
         </div>
     );
