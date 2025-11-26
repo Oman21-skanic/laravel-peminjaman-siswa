@@ -285,6 +285,58 @@ class BorrowingController extends Controller
         return Redirect::route('borrowings.index')->with('success', 'Peminjaman berhasil dihapus.');
     }
 
+    public function quickReturn(Borrowing $borrowing)
+{
+    // Validasi bahwa barang belum dikembalikan
+    if ($borrowing->returned_at) {
+        if (request()->inertia()) {
+            return Redirect::route('borrowings.index')->with('error', 'Barang sudah dikembalikan sebelumnya.');
+        }
+        return response()->json([
+            'success' => false,
+            'message' => 'Barang sudah dikembalikan sebelumnya.'
+        ], 400);
+    }
+
+    try {
+        DB::beginTransaction();
+
+        // Update tanggal pengembalian ke waktu sekarang
+        $borrowing->update([
+            'returned_at' => Carbon::now(),
+            'status' => 'returned'
+        ]);
+
+        // Update status inventory menjadi available
+        $borrowing->inventory->update(['status' => 'available']);
+
+        DB::commit();
+
+        if (request()->inertia()) {
+            return Redirect::route('borrowings.index')->with('success', 'Barang berhasil dikembalikan.');
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Barang berhasil dikembalikan.',
+            'returned_at' => $borrowing->returned_at->format('Y-m-d H:i:s')
+        ]);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        \Log::error('Error in quick return: ' . $e->getMessage());
+        
+        if (request()->inertia()) {
+            return Redirect::route('borrowings.index')->with('error', 'Terjadi kesalahan saat mengembalikan barang.');
+        }
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Terjadi kesalahan saat mengembalikan barang.'
+        ], 500);
+    }
+}
+
     public function returnBorrowing(Borrowing $borrowing)
     {
         if (!$borrowing->returned_at) {
@@ -301,3 +353,4 @@ class BorrowingController extends Controller
         return Redirect::route('borrowings.index')->with('error', 'Barang sudah dikembalikan sebelumnya.');
     }
 }
+

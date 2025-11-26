@@ -23,10 +23,12 @@ export default function Index({
 }) {
     const { url } = usePage();
     const [search, setSearch] = useState(filters.search || "");
-    const [statusFilter, setStatusFilter] = useState(
-        filters.statusFilter || ""
-    );
+    const [statusFilter, setStatusFilter] = useState(filters.statusFilter || "");
     const [selectedPerPage, setSelectedPerPage] = useState(perPage);
+
+    // Debug: Lihat data yang diterima
+    console.log('Borrowings data:', borrowings);
+    console.log('First borrowing item:', borrowings.data[0]);
 
     // Filter data secara client-side untuk data yang sudah di-paginate
     const filteredBorrowings = useMemo(() => {
@@ -59,9 +61,28 @@ export default function Index({
         }
     };
 
-    const handleReturn = (id) => {
-        if (confirm("Apakah Anda yakin ingin menandai sebagai dikembalikan?")) {
-            router.put(route("borrowings.return", id));
+    // Fungsi untuk quick return
+    // Fungsi untuk quick return
+    const handleQuickReturn = async (borrowing) => {
+        console.log('Quick return for:', borrowing);
+
+        if (confirm(`Apakah Anda yakin ingin mengembalikan barang "${borrowing.inventory?.nama_barang}"?`)) {
+            try {
+                // Gunakan router.put dari Inertia untuk handle CSRF token otomatis
+                router.put(route('borrowings.quick-return', borrowing.id), {}, {
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        alert('Barang berhasil dikembalikan!');
+                    },
+                    onError: (errors) => {
+                        alert('Gagal mengembalikan barang: ' + (errors.message || 'Terjadi kesalahan'));
+                    }
+                });
+
+            } catch (error) {
+                console.error('Error returning item:', error);
+                alert('Terjadi kesalahan saat mengembalikan barang.');
+            }
         }
     };
 
@@ -117,13 +138,13 @@ export default function Index({
         return monthlyBorrowings.length > 0
             ? monthlyBorrowings
             : [
-                  { name: "Jan", value: 0 },
-                  { name: "Feb", value: 0 },
-                  { name: "Mar", value: 0 },
-                  { name: "Apr", value: 0 },
-                  { name: "Mei", value: 0 },
-                  { name: "Jun", value: 0 },
-              ];
+                { name: "Jan", value: 0 },
+                { name: "Feb", value: 0 },
+                { name: "Mar", value: 0 },
+                { name: "Apr", value: 0 },
+                { name: "Mei", value: 0 },
+                { name: "Jun", value: 0 },
+            ];
     }, [monthlyBorrowings]);
 
     const getStatusBadge = (borrowing) => {
@@ -214,7 +235,7 @@ export default function Index({
 
                     <PieChart
                         title="Status Peminjaman"
-                        total={stats.total || 0 }
+                        total={stats.total || 0}
                         activeCount={stats.borrowed || 0}
                         inactiveCount={stats.returned || 0}
                         activeLabel="Sedang Dipinjam"
@@ -335,17 +356,16 @@ export default function Index({
                                                 <div className="flex items-center gap-3">
                                                     {borrowing.student
                                                         ?.profile_picture ||
-                                                    borrowing.teacher
-                                                        ?.profile_picture ? (
+                                                        borrowing.teacher
+                                                            ?.profile_picture ? (
                                                         <img
-                                                            src={`/storage/${
-                                                                borrowing
-                                                                    .student
-                                                                    ?.profile_picture ||
+                                                            src={`/storage/${borrowing
+                                                                .student
+                                                                ?.profile_picture ||
                                                                 borrowing
                                                                     .teacher
                                                                     ?.profile_picture
-                                                            }`}
+                                                                }`}
                                                             alt="Profile"
                                                             className="w-8 h-8 rounded-full object-cover border border-gray-600"
                                                         />
@@ -353,7 +373,7 @@ export default function Index({
                                                         <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center border border-gray-600">
                                                             <span className="text-gray-400 text-xs">
                                                                 {borrowing.role ===
-                                                                "student"
+                                                                    "student"
                                                                     ? "👨‍🎓"
                                                                     : "👨‍🏫"}
                                                             </span>
@@ -371,7 +391,7 @@ export default function Index({
                                                             )}{" "}
                                                             •{" "}
                                                             {borrowing.role ===
-                                                            "student"
+                                                                "student"
                                                                 ? "Siswa"
                                                                 : "Guru"}
                                                         </div>
@@ -420,10 +440,10 @@ export default function Index({
                                                 <div className="text-gray-300 text-sm">
                                                     {borrowing.returned_at
                                                         ? new Date(
-                                                              borrowing.returned_at
-                                                          ).toLocaleDateString(
-                                                              "id-ID"
-                                                          )
+                                                            borrowing.returned_at
+                                                        ).toLocaleDateString(
+                                                            "id-ID"
+                                                        )
                                                         : "-"}
                                                 </div>
                                             ),
@@ -445,14 +465,13 @@ export default function Index({
                                                     );
                                                 return (
                                                     <span
-                                                        className={`text-sm font-medium ${
-                                                            daysRemaining <= 2
-                                                                ? "text-red-400"
-                                                                : daysRemaining <=
-                                                                  4
+                                                        className={`text-sm font-medium ${daysRemaining <= 2
+                                                            ? "text-red-400"
+                                                            : daysRemaining <=
+                                                                4
                                                                 ? "text-yellow-400"
                                                                 : "text-green-400"
-                                                        }`}
+                                                            }`}
                                                     >
                                                         {daysRemaining} hari
                                                     </span>
@@ -476,21 +495,74 @@ export default function Index({
                                             },
                                         },
                                     ]}
-                                    viewRoute={(id) =>
-                                        route("borrowings.show", id)
-                                    }
+                                    // Hapus viewRoute karena kita handle view button secara custom
                                     editRoute={(id) =>
                                         route("borrowings.edit", id)
                                     }
                                     onDelete={handleDelete}
-                                    customActions={(item) =>
-                                        !item.returned_at && (
-                                            <button
-                                                onClick={() =>
-                                                    handleReturn(item.id)
-                                                }
-                                                className="p-2 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 hover:text-green-300 border border-green-500/30 transition-all duration-300 hover:scale-110"
-                                                title="Tandai Dikembalikan"
+                                    // Di dalam component Index, ganti customActions dengan ini:
+                                    customActions={(item) => (
+                                        <div className="flex gap-2">
+                                            {/* Debug info - sementara tampilkan untuk testing */}
+                                            <div className="text-xs text-gray-500 hidden">
+                                                ID: {item.id}, Returned: {item.returned_at ? 'Yes' : 'No'}
+                                            </div>
+
+                                            {/* Tombol Pengembalian - hanya untuk barang yang belum dikembalikan */}
+                                            {!item.returned_at ? (
+                                                <button
+                                                    onClick={() => handleQuickReturn(item)}
+                                                    className="p-2 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 hover:text-green-300 border border-green-500/30 transition-all duration-300 hover:scale-110"
+                                                    title="Kembalikan Barang"
+                                                >
+                                                    <svg
+                                                        className="w-4 h-4"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        viewBox="0 0 24 24"
+                                                    >
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            strokeWidth={2}
+                                                            d="M5 13l4 4L19 7"
+                                                        />
+                                                    </svg>
+                                                </button>
+                                            ) : (
+                                                // Tombol Lihat untuk barang yang sudah dikembalikan (disabled)
+                                                <a
+                                                    href={route("borrowings.show", item.id)}
+                                                    className="p-2 rounded-lg bg-gray-500/20 text-gray-400 border border-gray-500/30 cursor-not-allowed opacity-50"
+                                                    title="Lihat Detail (Sudah Dikembalikan)"
+                                                >
+                                                    <svg
+                                                        className="w-4 h-4"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        viewBox="0 0 24 24"
+                                                    >
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            strokeWidth={2}
+                                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                                        />
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            strokeWidth={2}
+                                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                                        />
+                                                    </svg>
+                                                </a>
+                                            )}
+
+                                            {/* Tombol Edit */}
+                                            <a
+                                                href={route("borrowings.edit", item.id)}
+                                                className="p-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 hover:text-blue-300 border border-blue-500/30 transition-all duration-300 hover:scale-110"
+                                                title="Edit Peminjaman"
                                             >
                                                 <svg
                                                     className="w-4 h-4"
@@ -502,12 +574,33 @@ export default function Index({
                                                         strokeLinecap="round"
                                                         strokeLinejoin="round"
                                                         strokeWidth={2}
-                                                        d="M5 13l4 4L19 7"
+                                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                                    />
+                                                </svg>
+                                            </a>
+
+                                            {/* Tombol Delete */}
+                                            <button
+                                                onClick={() => handleDelete(item.id)}
+                                                className="p-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 hover:text-red-300 border border-red-500/30 transition-all duration-300 hover:scale-110"
+                                                title="Hapus Peminjaman"
+                                            >
+                                                <svg
+                                                    className="w-4 h-4"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth={2}
+                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                                                     />
                                                 </svg>
                                             </button>
-                                        )
-                                    }
+                                        </div>
+                                    )}
                                 />
                             </div>
 

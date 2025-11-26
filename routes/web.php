@@ -20,8 +20,6 @@ Route::get('/', function () {
     ]);
 });
 
-
-
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
@@ -34,10 +32,13 @@ Route::middleware('auth')->group(function () {
     Route::resource('students', StudentController::class);
     Route::resource('teachers', TeacherController::class);
     Route::resource('inventories', InventoryController::class);
+    
+    // Borrowings routes - letakkan custom routes SEBELUM resource
+    Route::put('/borrowings/{borrowing}/quick-return', [BorrowingController::class, 'quickReturn'])->name('borrowings.quick-return');
+    Route::put('/borrowings/{borrowing}/return', [BorrowingController::class, 'returnBorrowing'])->name('borrowings.return');
     Route::resource('borrowings', BorrowingController::class);
+    
     Route::resource('category', CategoryControlller::class);
-   // routes/web.php
-Route::put('/borrowings/{borrowing}/return', [BorrowingController::class, 'returnBorrowing'])->name('borrowings.return');
 });
 
 require __DIR__.'/auth.php';
