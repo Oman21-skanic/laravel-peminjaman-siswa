@@ -16,6 +16,8 @@ import Pagination from "@/Components/Pagination";
 export default function Index({
     auth,
     borrowings,
+    monthlyBorrowings = [],
+    stats = {},
     filters = {},
     perPage = 10,
 }) {
@@ -32,6 +34,9 @@ export default function Index({
             const matchesSearch =
                 search === "" ||
                 borrowing.student?.nama_lengkap
+                    .toLowerCase()
+                    .includes(search.toLowerCase()) ||
+                borrowing.teacher?.nama_lengkap
                     .toLowerCase()
                     .includes(search.toLowerCase()) ||
                 borrowing.inventory?.nama_barang
@@ -107,32 +112,19 @@ export default function Index({
         );
     };
 
-    // Data untuk charts
+    // Data untuk charts - menggunakan data real dari database
     const monthlyData = useMemo(() => {
-        const months = [
-            "Jan",
-            "Feb",
-            "Mar",
-            "Apr",
-            "Mei",
-            "Jun",
-            "Jul",
-            "Agu",
-            "Sep",
-            "Okt",
-            "Nov",
-            "Des",
-        ];
-        const currentMonth = new Date().getMonth();
-
-        return months.slice(0, currentMonth + 1).map((month, index) => ({
-            name: month,
-            value: Math.floor(Math.random() * 20) + 5, // Mock data untuk demo
-        }));
-    }, []);
-
-    const borrowedCount = borrowings.data.filter((b) => !b.returned_at).length;
-    const returnedCount = borrowings.data.filter((b) => b.returned_at).length;
+        return monthlyBorrowings.length > 0
+            ? monthlyBorrowings
+            : [
+                  { name: "Jan", value: 0 },
+                  { name: "Feb", value: 0 },
+                  { name: "Mar", value: 0 },
+                  { name: "Apr", value: 0 },
+                  { name: "Mei", value: 0 },
+                  { name: "Jun", value: 0 },
+              ];
+    }, [monthlyBorrowings]);
 
     const getStatusBadge = (borrowing) => {
         if (borrowing.returned_at) {
@@ -171,6 +163,26 @@ export default function Index({
         return Math.max(0, 7 - diffDays);
     };
 
+    // Fungsi untuk mendapatkan nama peminjam (student atau teacher)
+    const getPeminjamName = (borrowing) => {
+        if (borrowing.student) {
+            return borrowing.student.nama_lengkap;
+        } else if (borrowing.teacher) {
+            return borrowing.teacher.nama_lengkap;
+        }
+        return "Tidak diketahui";
+    };
+
+    // Fungsi untuk mendapatkan NISN/NIP peminjam
+    const getPeminjamIdentifier = (borrowing) => {
+        if (borrowing.student) {
+            return borrowing.student.nisn;
+        } else if (borrowing.teacher) {
+            return borrowing.teacher.nip;
+        }
+        return "-";
+    };
+
     return (
         <AuthenticatedLayout
             user={auth.user}
@@ -194,7 +206,7 @@ export default function Index({
                 {/* Statistics Section */}
                 <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <BarChart
-                        title="Trend Peminjaman Bulan Ini"
+                        title="Trend Peminjaman Tahun Ini"
                         data={monthlyData}
                         color="orange"
                         height={320}
@@ -202,9 +214,9 @@ export default function Index({
 
                     <PieChart
                         title="Status Peminjaman"
-                        total={borrowings.data.length}
-                        activeCount={borrowedCount}
-                        inactiveCount={returnedCount}
+                        total={stats.total || 0 }
+                        activeCount={stats.borrowed || 0}
+                        inactiveCount={stats.returned || 0}
                         activeLabel="Sedang Dipinjam"
                         inactiveLabel="Sudah Dikembalikan"
                     />
@@ -214,7 +226,7 @@ export default function Index({
                 <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700/50 text-center">
                         <div className="text-2xl font-bold text-blue-400 mb-1">
-                            {borrowedCount}
+                            {stats.borrowed || 0}
                         </div>
                         <div className="text-sm text-gray-400">
                             Sedang Dipinjam
@@ -222,7 +234,7 @@ export default function Index({
                     </div>
                     <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700/50 text-center">
                         <div className="text-2xl font-bold text-green-400 mb-1">
-                            {returnedCount}
+                            {stats.returned || 0}
                         </div>
                         <div className="text-sm text-gray-400">
                             Dikembalikan
@@ -230,28 +242,13 @@ export default function Index({
                     </div>
                     <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700/50 text-center">
                         <div className="text-2xl font-bold text-red-400 mb-1">
-                            {
-                                borrowings.data.filter((b) => {
-                                    if (!b.returned_at) {
-                                        const borrowedDate = new Date(
-                                            b.borrowed_at
-                                        );
-                                        const today = new Date();
-                                        const diffDays = Math.ceil(
-                                            (today - borrowedDate) /
-                                                (1000 * 60 * 60 * 24)
-                                        );
-                                        return diffDays > 7;
-                                    }
-                                    return false;
-                                }).length
-                            }
+                            {stats.overdue || 0}
                         </div>
                         <div className="text-sm text-gray-400">Terlambat</div>
                     </div>
                     <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700/50 text-center">
                         <div className="text-2xl font-bold text-purple-400 mb-1">
-                            {borrowings.data.length}
+                            {stats.total || 0}
                         </div>
                         <div className="text-sm text-gray-400">
                             Total Peminjaman
@@ -270,7 +267,7 @@ export default function Index({
                                     value={search}
                                     onChange={setSearch}
                                     onSearch={handleFilter}
-                                    placeholder="Cari berdasarkan nama siswa atau barang..."
+                                    placeholder="Cari berdasarkan nama siswa, guru, atau barang..."
                                     className="w-full"
                                 />
                             </div>
@@ -332,38 +329,51 @@ export default function Index({
                                     data={filteredBorrowings}
                                     columns={[
                                         {
-                                            key: "student",
-                                            header: "Siswa",
+                                            key: "peminjam",
+                                            header: "Peminjam",
                                             render: (borrowing) => (
                                                 <div className="flex items-center gap-3">
                                                     {borrowing.student
+                                                        ?.profile_picture ||
+                                                    borrowing.teacher
                                                         ?.profile_picture ? (
                                                         <img
-                                                            src={`/storage/${borrowing.student.profile_picture}`}
+                                                            src={`/storage/${
+                                                                borrowing
+                                                                    .student
+                                                                    ?.profile_picture ||
+                                                                borrowing
+                                                                    .teacher
+                                                                    ?.profile_picture
+                                                            }`}
                                                             alt="Profile"
                                                             className="w-8 h-8 rounded-full object-cover border border-gray-600"
                                                         />
                                                     ) : (
                                                         <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center border border-gray-600">
                                                             <span className="text-gray-400 text-xs">
-                                                                👨‍🎓
+                                                                {borrowing.role ===
+                                                                "student"
+                                                                    ? "👨‍🎓"
+                                                                    : "👨‍🏫"}
                                                             </span>
                                                         </div>
                                                     )}
                                                     <div>
                                                         <div className="font-medium text-white text-sm">
-                                                            {
+                                                            {getPeminjamName(
                                                                 borrowing
-                                                                    .student
-                                                                    ?.nama_lengkap
-                                                            }
+                                                            )}
                                                         </div>
                                                         <div className="text-xs text-gray-400">
-                                                            {
+                                                            {getPeminjamIdentifier(
                                                                 borrowing
-                                                                    .student
-                                                                    ?.nisn
-                                                            }
+                                                            )}{" "}
+                                                            •{" "}
+                                                            {borrowing.role ===
+                                                            "student"
+                                                                ? "Siswa"
+                                                                : "Guru"}
                                                         </div>
                                                     </div>
                                                 </div>

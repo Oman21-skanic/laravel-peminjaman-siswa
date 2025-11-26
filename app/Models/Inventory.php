@@ -1,4 +1,5 @@
 <?php
+// app/Models/Inventory.php
 
 namespace App\Models;
 
@@ -20,23 +21,40 @@ class Inventory extends Model
         'foto_barang',
     ];
 
-    // Add casting for is_active
     protected $casts = [
-        'is_active' => 'boolean',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
-    public function category()
+    // Accessor untuk is_active
+    public function getIsActiveAttribute($value)
     {
-        return $this->belongsTo(Category::class, 'kategori');
+        // Return boolean berdasarkan string
+        return $value === 'available';
     }
 
+    // Mutator untuk is_active
+    public function setIsActiveAttribute($value)
+    {
+        // Simpan sebagai string di database
+        $this->attributes['is_active'] = $value ? 'available' : 'unavailable';
+    }
+
+    // Scope untuk barang aktif
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', 'available');
+    }
+
+    // Scope untuk barang tidak aktif
+    public function scopeInactive($query)
+    {
+        return $query->where('is_active', 'unavailable');
+    }
+
+    // Relationship dengan borrowings jika ada
     public function borrowings()
     {
         return $this->hasMany(Borrowing::class);
-    }
-
-    public function currentBorrowing()
-    {
-        return $this->borrowings()->whereNull('returned_at')->latest()->first();
     }
 }

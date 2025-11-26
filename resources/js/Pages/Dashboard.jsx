@@ -52,6 +52,10 @@ export default function Dashboard({
         },
     ];
 
+    const getCurrentYear = () => {
+        return new Date().getFullYear();
+    };
+
     // Data untuk chart peminjaman (dummy data untuk demo)
     const borrowingTrendData = [
         { month: "Jan", total: 8 },
@@ -257,7 +261,9 @@ export default function Dashboard({
                             <h3 className="text-xl font-bold text-white">
                                 Trend Peminjaman
                             </h3>
-                            <div className="text-sm text-gray-400">2024</div>
+                            <div className="text-sm text-gray-400">
+                                {getCurrentYear()}
+                            </div>
                         </div>
                         <BarChart />
                     </div>

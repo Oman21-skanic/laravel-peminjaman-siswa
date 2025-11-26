@@ -1,4 +1,5 @@
 <?php
+// app/Http/Controllers/InventoryController.php
 
 namespace App\Http\Controllers;
 
@@ -32,16 +33,10 @@ class InventoryController extends Controller
 
         if (!empty($filters['statusFilter'])) {
             $isActive = $filters['statusFilter'] === 'Aktif';
-            $query->where('is_active', $isActive);
+            $query->where('is_active', $isActive ? 'available' : 'unavailable');
         }
 
         $inventories = $query->paginate($perPage)->withQueryString();
-
-        // Convert is_active to boolean for frontend
-        $inventories->getCollection()->transform(function ($inventory) {
-            $inventory->is_active = (bool)$inventory->is_active;
-            return $inventory;
-        });
 
         return Inertia::render('Inventories/Index', [
             'inventories' => $inventories,
@@ -68,9 +63,6 @@ class InventoryController extends Controller
             'foto_barang' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        // Convert boolean to integer for database
-        $validated['is_active'] = (int)$validated['is_active'];
-
         // Handle file upload
         if ($request->hasFile('foto_barang')) {
             $validated['foto_barang'] = $request->file('foto_barang')->store('inventory_photos', 'public');
@@ -83,9 +75,6 @@ class InventoryController extends Controller
 
     public function show(Inventory $inventory)
     {
-        // Convert is_active to boolean for frontend
-        $inventory->is_active = (bool)$inventory->is_active;
-
         return Inertia::render('Inventories/Show', [
             'inventory' => $inventory->load(['borrowings.student']),
         ]);
@@ -93,9 +82,6 @@ class InventoryController extends Controller
 
     public function edit(Inventory $inventory)
     {
-        // Convert is_active to boolean for frontend
-        $inventory->is_active = (bool)$inventory->is_active;
-
         return Inertia::render('Inventories/Edit', [
             'inventory' => $inventory->load(['borrowings.student']),
         ]);
@@ -113,11 +99,6 @@ class InventoryController extends Controller
             'is_active' => 'boolean',
             'foto_barang' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
-
-        // Convert boolean to integer for database
-        if (isset($validated['is_active'])) {
-            $validated['is_active'] = (int)$validated['is_active'];
-        }
 
         // Handle file upload
         if ($request->hasFile('foto_barang')) {

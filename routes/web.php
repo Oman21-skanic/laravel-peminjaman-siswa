@@ -36,6 +36,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('inventories', InventoryController::class);
     Route::resource('borrowings', BorrowingController::class);
     Route::resource('category', CategoryControlller::class);
+   // routes/web.php
+Route::put('/borrowings/{borrowing}/return', [BorrowingController::class, 'returnBorrowing'])->name('borrowings.return');
 });
 
 require __DIR__.'/auth.php';

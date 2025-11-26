@@ -96,9 +96,8 @@ export default function PieChart({
                                 fill="none"
                                 stroke="#10b981"
                                 strokeWidth="3"
-                                strokeDasharray={`${activePercentage} ${
-                                    100 - activePercentage
-                                }`}
+                                strokeDasharray={`${activePercentage} ${100 - activePercentage
+                                    }`}
                                 strokeLinecap="round"
                                 className="transition-all duration-1000 ease-out"
                             />
@@ -110,9 +109,8 @@ export default function PieChart({
                                 fill="none"
                                 stroke="#ef4444"
                                 strokeWidth="3"
-                                strokeDasharray={`${inactivePercentage} ${
-                                    100 - inactivePercentage
-                                }`}
+                                strokeDasharray={`${inactivePercentage} ${100 - inactivePercentage
+                                    }`}
                                 strokeDashoffset={`-${activePercentage}`}
                                 strokeLinecap="round"
                                 className="transition-all duration-1000 ease-out"
