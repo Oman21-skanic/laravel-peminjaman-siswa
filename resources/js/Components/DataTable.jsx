@@ -20,12 +20,12 @@ export default function DataTable({
 
     const ActionButton = ({ onClick, icon, color = "gray", title, href, className = "" }) => {
         const baseClasses = `p-2 rounded-lg transition-all duration-300 hover:scale-110 ${className} ${color === "red"
-                ? "bg-red-500/20 hover:bg-red-500/30 text-red-400 hover:text-red-300 border border-red-500/30"
-                : color === "green"
-                    ? "bg-green-500/20 hover:bg-green-500/30 text-green-400 hover:text-green-300 border border-green-500/30"
-                    : color === "blue"
-                        ? "bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 hover:text-blue-300 border border-blue-500/30"
-                        : "bg-gray-600/50 hover:bg-gray-600/70 text-gray-400 hover:text-gray-300 border border-gray-500/30"
+            ? "bg-red-500/20 hover:bg-red-500/30 text-red-400 hover:text-red-300 border border-red-500/30"
+            : color === "green"
+                ? "bg-green-500/20 hover:bg-green-500/30 text-green-400 hover:text-green-300 border border-green-500/30"
+                : color === "blue"
+                    ? "bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 hover:text-blue-300 border border-blue-500/30"
+                    : "bg-gray-600/50 hover:bg-gray-600/70 text-gray-400 hover:text-gray-300 border border-gray-500/30"
             }`;
 
         if (href) {
@@ -67,9 +67,29 @@ export default function DataTable({
 
     // Render actions untuk desktop
     const renderDesktopActions = (item) => {
-        // Jika ada customActions, gunakan itu
+        // Jika ada customActions, gunakan itu TAPI tetap sertakan tombol view jika ada viewRoute
         if (customActions) {
-            return customActions(item);
+            return (
+                <div className="flex justify-center items-center gap-2">
+                    {/* Tetap tampilkan tombol view jika ada viewRoute */}
+                    {viewRoute && (
+                        <ActionButton
+                            href={viewRoute(item.id)}
+                            icon={
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                />
+                            }
+                            title="Lihat Detail"
+                        />
+                    )}
+                    {/* Custom actions dari prop */}
+                    {customActions(item)}
+                </div>
+            );
         }
 
         // Default actions
@@ -123,9 +143,29 @@ export default function DataTable({
 
     // Render actions untuk mobile
     const renderMobileActions = (item) => {
-        // Jika ada customActions, gunakan itu
+        // Jika ada customActions, gunakan itu TAPI tetap sertakan tombol view jika ada viewRoute
         if (customActions) {
-            return customActions(item);
+            return (
+                <>
+                    {/* Tetap tampilkan tombol view jika ada viewRoute */}
+                    {viewRoute && (
+                        <ActionButton
+                            href={viewRoute(item.id)}
+                            icon={
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                />
+                            }
+                            title="Lihat Detail"
+                        />
+                    )}
+                    {/* Custom actions dari prop */}
+                    {customActions(item)}
+                </>
+            );
         }
 
         // Default actions
@@ -264,8 +304,8 @@ export default function DataTable({
                                 {item.is_active !== undefined && (
                                     <span
                                         className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${item.is_active
-                                                ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                                                : "bg-red-500/20 text-red-400 border border-red-500/30"
+                                            ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                                            : "bg-red-500/20 text-red-400 border border-red-500/30"
                                             }`}
                                     >
                                         {item.is_active

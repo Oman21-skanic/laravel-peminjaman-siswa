@@ -197,7 +197,7 @@ export default function Dashboard({
                                 {getGreeting()}, {auth.user.name}!
                             </h1>
                             <p className="text-gray-300 text-lg">
-                                Dashboard Analytics Sistem Perpustakaan Sekolah
+                                Dashboard analisis peminjaman barang di SMKN 01 CIOMAS
                             </p>
                             <div className="flex items-center gap-4 mt-4 text-sm text-gray-400">
                                 <div className="flex items-center gap-2">

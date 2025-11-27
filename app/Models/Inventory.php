@@ -55,6 +55,6 @@ class Inventory extends Model
     // Relationship dengan borrowings jika ada
     public function borrowings()
     {
-        return $this->hasMany(Borrowing::class);
+        return $this->hasMany(Borrowing::class, 'inventory_id');
     }
 }

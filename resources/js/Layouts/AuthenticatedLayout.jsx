@@ -109,6 +109,26 @@ export default function AuthenticatedLayout({ header, children }) {
             ),
             current: route().current("inventories.index"),
         },
+        {
+            name: "Laporan",
+            href: route("reports.index"),
+            icon: (
+                <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                    />
+                </svg>
+            ),
+            current: route().current("reports.*"), // Perhatikan .* untuk semua sub-route reports
+        },
     ];
 
     return (
@@ -128,11 +148,10 @@ export default function AuthenticatedLayout({ header, children }) {
                     fixed lg:static inset-y-0 left-0 z-50
                     w-72 flex-shrink-0 bg-gray-900/95 p-6 flex flex-col
                     transform transition-all duration-300 ease-in-out
-                    ${
-                        sidebarOpen
+                    ${sidebarOpen
                             ? "translate-x-0"
                             : "-translate-x-full lg:translate-x-0"
-                    }
+                        }
                     border-r border-gray-800/30
                 `}
                 >
@@ -145,21 +164,22 @@ export default function AuthenticatedLayout({ header, children }) {
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
+                                    xmlns="http://www.w3.org/2000/svg"
                                 >
                                     <path
                                         strokeLinecap="round"
                                         strokeLinejoin="round"
                                         strokeWidth={1.5}
-                                        d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                                        d="M12 22s8-4 8-10V6l-2-1-6-2-6 2-2 1v6c0 6 8 10 8 10z M8 10h8v6c0 1.1-.9 2-2 2H10c-1.1 0-2-.9-2-2v-6z M8 10c0 1.5 1.79 3 4 3s4-1.5 4-3 M10.5 7.5h3v2h-3z M7.5 6L6.5 4h11l-1 2"
                                     />
                                 </svg>
                             </div>
                             <div>
                                 <h1 className="text-lg font-semibold text-gray-200">
-                                    School Library
+                                    Sewanic
                                 </h1>
                                 <p className="text-xs text-gray-500">
-                                    Management System
+                                    Kontrol Peminjaman skanic
                                 </p>
                             </div>
                         </div>

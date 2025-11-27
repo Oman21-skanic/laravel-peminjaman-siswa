@@ -19,4 +19,10 @@ class Teacher extends Model
         'profile_picture',
         'is_active',
     ];
+
+    // TAMBAHKAN RELATIONSHIP INI
+    public function borrowings()
+    {
+        return $this->hasMany(Borrowing::class, 'teacher_id');
+    }
 }

@@ -4,6 +4,7 @@ use App\Http\Controllers\BorrowingController;
 use App\Http\Controllers\CategoryControlller;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\DashboardController;
@@ -39,6 +40,9 @@ Route::middleware('auth')->group(function () {
     Route::resource('borrowings', BorrowingController::class);
     
     Route::resource('category', CategoryControlller::class);
+    // Reports Routes
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
 });
 
 require __DIR__.'/auth.php';

@@ -17,12 +17,12 @@ export default function Create({ auth, errors: serverErrors }) {
             type: "select",
             required: true,
             options: [
-                { value: "X-A", label: "X-A" },
-                { value: "X-B", label: "X-B" },
-                { value: "XI-A", label: "XI-A" },
-                { value: "XI-B", label: "XI-B" },
-                { value: "XII-A", label: "XII-A" },
-                { value: "XII-B", label: "XII-B" },
+                { value: "X-PPLG-1", label: "X-PPLG-1" },
+                { value: "X-PPLG-2", label: "X-PPLG-2" },
+                { value: "X-PPLG-3", label: "X-PPLG-3" },
+                { value: "XI-PPLG-1", label: "XI-PPLG-1" },
+                { value: "XI-PPLG-3", label: "XI-PPLG-2" },
+                { value: "XI-PPLG-3", label: "XI-PPLG-3" },
             ],
         },
         {
